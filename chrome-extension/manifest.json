@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "File Download Manager",
+  "author": "Awan Digitals",
+  "version": "1.0.0",
+  "description": "Ekstensi untuk menangkap download dan mengirimkannya ke Download Manager desktop.",
+  "permissions": [
+    "downloads",
+    "cookies",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "http://localhost:5050/*",
+    "http://127.0.0.1:5050/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "File Download Manager is Active"
+  }
+}
