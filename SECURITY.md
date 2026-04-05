@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in this project, please report it by emailing us at [your-email@example.com] or by opening an issue with the label `security`.
+If you discover a security vulnerability in this project, please report it by emailing us at [awan@awancoder.com] or by opening an issue with the label `security`.
 
 We will respond as quickly as possible to address the issue.
 
