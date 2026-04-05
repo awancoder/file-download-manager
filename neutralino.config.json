@@ -1,19 +1,19 @@
 {
   "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
   "applicationId": "com.awandigitals.file-download-manager",
-  "version": "26.3.22",
+  "version": "26.3.24",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/resources/",
   "url": "/",
   "enableServer": true,
   "enableNativeAPI": true,
-  "tokenSecurity": "one-time",
+  "tokenSecurity": "none",
   "enableExtensions": true,
   "extensions": [
     {
       "id": "listener",
-      "command": "node \"${NL_PATH}/extensions/listener/index.js\""
+      "command": "\"${NL_PATH}/extensions/listener/start.bat\""
     }
   ],
   "logging": {
@@ -47,15 +47,15 @@
       "title": "File Download Manager",
       "width": 850,
       "height": 1080,
-      "minWidth": 400,
-      "minHeight": 400,
+      "minWidth": 700,
+      "minHeight": 700,
       "center": true,
       "fullScreen": false,
       "alwaysOnTop": false,
       "icon": "/resources/icons/appIcon.png",
       "enableInspector": true,
       "borderless": false,
-      "maximize": false,
+      "maximize": true,
       "hidden": false,
       "resizable": true,
       "exitProcessOnClose": false
@@ -85,7 +85,7 @@
     }
   },
   "cli": {
-    "binaryName": "video-yt-downloader",
+    "binaryName": "file-download-manager",
     "resourcesPath": "/resources/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/resources/js/neutralino.js",

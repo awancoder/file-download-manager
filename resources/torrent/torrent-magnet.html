@@ -1,0 +1,22 @@
+<!-- Magnet Link Input Modal -->
+<div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+        <h2>Paste Magnet Link</h2>
+        <button class="btn-close-modal" onclick="torrentCloseMagnetModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+        <div class="adv-group">
+            <label for="magnetLinkInput">Magnet URI:</label>
+            <textarea id="magnetLinkInput" rows="4"
+                placeholder="magnet:?xt=urn:btih:..."
+                style="width: 100%; resize: vertical; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-light); border-radius: 6px; padding: 0.6rem; font-family: monospace; font-size: 0.8rem;"></textarea>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="torrentCloseMagnetModal()" style="padding: 0.5rem 1rem;">Cancel</button>
+            <button class="btn btn-primary" onclick="torrentSubmitMagnet()" style="padding: 0.5rem 1.2rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 15 22 11 13 2 9 22 2"></polyline></svg>
+                Download
+            </button>
+        </div>
+    </div>
+</div>

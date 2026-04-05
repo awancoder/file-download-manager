@@ -10,6 +10,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "node-downloader-helper": "^2.1.11",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "webtorrent": "^1.9.7"
   }
 }

@@ -2,12 +2,19 @@
   "manifest_version": 3,
   "name": "File Download Manager",
   "author": "Awan Digitals",
-  "version": "1.0.0",
-  "description": "Ekstensi untuk menangkap download dan mengirimkannya ke Download Manager desktop.",
+  "version": "26.3.24",
+  "description": "An extension to intercept downloads and send them to the File Download Manager desktop application.",
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
   "permissions": [
     "downloads",
     "cookies",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "storage"
   ],
   "host_permissions": [
     "http://localhost:5050/*",
@@ -18,6 +25,8 @@
     "service_worker": "background.js"
   },
   "action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html",
     "default_title": "File Download Manager is Active"
   }
 }

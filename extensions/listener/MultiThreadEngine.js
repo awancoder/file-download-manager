@@ -23,13 +23,16 @@ class MultiThreadEngine extends EventEmitter {
 
         this.fallbackDl = null;
         this.aborted = false;
+        this.isPaused = false;
+        this.pauseResolvers = [];
         this.streams = [];
         this.reqs = [];
+        this.chunkProgress = []; // Track progress per chunk
         
         let ext = path.extname(this.fileName);
         let base = path.basename(this.fileName, ext);
         
-        // Ensure unique filename (Do not overwrite existing)
+        // Ensure unique filename
         let finalName = this.fileName;
         let counter = 1;
         while(fs.existsSync(path.join(this.destFolder, finalName))) {
@@ -41,10 +44,8 @@ class MultiThreadEngine extends EventEmitter {
 
     start() {
         this.getMetadata().then(meta => {
-            
-            // Override nama file jika UI sebelumnya menyerah dengan sebutan generic 'download'
-            if (meta.serverFileName && (this.fileName === 'download' || this.fileName === 'file_download' || !this.fileName.includes('.'))) {
-                this.fileName = meta.serverFileName.replace(/[<>:"/\\|?*]/g, '_'); // Sanitasi illegal chars Windows
+            if (meta.serverFileName && (this.fileName === 'download' || !this.fileName.includes('.'))) {
+                this.fileName = meta.serverFileName.replace(/[<>:"/\\|?*]/g, '_');
                 let ext = path.extname(this.fileName);
                 let base = path.basename(this.fileName, ext);
                 let finalName = this.fileName;
@@ -57,22 +58,16 @@ class MultiThreadEngine extends EventEmitter {
             }
 
             if (!meta.supportsRange || meta.size < 5 * 1024 * 1024) { 
-                // Under 5MB or old server, use normal Single Thread
-                console.log("[MT-Engine] Fallback to Single-Thread (Server doesn't support Range / Small Size)");
                 this.fallbackToSingleThread();
             } else {
-                console.log(`[MT-Engine] Starting EXTREME Operation 🚀 (${this.threads} Simultaneous TCP Paths) Size: ${meta.size}`);
                 this.totalSize = meta.size;
                 this.emit('download', { totalSize: this.totalSize, engine: 'multi', fileName: path.basename(this.filePath) });
                 this.startMultiThread();
             }
         }).catch(err => {
-            console.error("[MT-Engine] Failed to scan S3/Server Metadata:", err.message);
-            console.log("[MT-Engine] Emergency Fallback to Conventional Single-Thread Mode");
+            console.error("[MT-Engine] Metadata Error, falling back:", err.message);
             this.fallbackToSingleThread();
         });
-        
-        // Pseudo promise so external .catch() caller doesn't crash
         return Promise.resolve();
     }
 
@@ -80,31 +75,20 @@ class MultiThreadEngine extends EventEmitter {
         return new Promise((resolve, reject) => {
             const parsedUrl = new URL(this.url);
             const client = parsedUrl.protocol === 'https:' ? https : http;
-            // Use Range 0-0 instead of pure HEAD because Amazon S3 with GET presigned often rejects HEAD.
             let options = {
                 method: 'GET',
                 headers: Object.assign({}, this.headers, { 'Range': 'bytes=0-0' })
             };
 
             const req = client.request(this.url, options, (res) => {
-                if (res.statusCode >= 400) {
-                    return reject(new Error('Site rejected initial access with HTTP status ' + res.statusCode));
-                }
+                if (res.statusCode >= 400) return reject(new Error('HTTP status ' + res.statusCode));
                 
                 let cd = res.headers['content-disposition'];
                 let serverFileName = null;
                 if (cd) {
-                    let utf8Match = cd.match(/filename\*=UTF-8''([^;\s]+)/i);
-                    if (utf8Match && utf8Match[1]) {
-                        serverFileName = decodeURIComponent(utf8Match[1]);
-                    } else {
-                        let standardMatch = cd.match(/filename=["']?([^;"'\r\n]+)["']?/i);
-                        if (standardMatch && standardMatch[1]) {
-                            try { serverFileName = decodeURIComponent(standardMatch[1]); } catch(e) { serverFileName = standardMatch[1]; }
-                        }
-                    }
-                    if (serverFileName) {
-                        console.log(`[MT-Engine] Header Content-Disposition terdeteksi! Nama Asli Server: ${serverFileName}`);
+                    let match = cd.match(/filename\*=UTF-8''([^;\s]+)/i) || cd.match(/filename=["']?([^;"'\r\n]+)["']?/i);
+                    if (match && match[1]) {
+                        try { serverFileName = decodeURIComponent(match[1]); } catch(e) { serverFileName = match[1]; }
                     }
                 }
 
@@ -116,7 +100,7 @@ class MultiThreadEngine extends EventEmitter {
                 } else {
                     size = parseInt(res.headers['content-length'] || 0);
                 }
-                res.destroy(); // Close interrogation
+                res.destroy();
                 resolve({ supportsRange, size, serverFileName });
             });
             req.on('error', reject);
@@ -125,28 +109,28 @@ class MultiThreadEngine extends EventEmitter {
     }
 
     startMultiThread() {
-        // Instant allocation (Sparse Pre-Allocation) in Windows NTFS to accommodate full file without freezing:
-        let fd = fs.openSync(this.filePath, 'w');
-        fs.ftruncateSync(fd, this.totalSize);
-        fs.closeSync(fd);
+        try {
+            let fd = fs.openSync(this.filePath, 'w');
+            fs.ftruncateSync(fd, this.totalSize);
+            fs.closeSync(fd);
+        } catch(e) {
+            return this.emit('error', new Error('Failed to pre-allocate file: ' + e.message));
+        }
 
         let chunkSize = Math.floor(this.totalSize / this.threads);
         let promises = [];
-
         this.startTime = Date.now();
         this.lastProgressTime = Date.now();
-        this.lastDownloaded = 0;
 
         for (let i = 0; i < this.threads; i++) {
             let startByte = i * chunkSize;
             let endByte = (i === this.threads - 1) ? this.totalSize - 1 : (startByte + chunkSize - 1);
+            this.chunkProgress[i] = { startByte, endByte, currentByte: startByte };
             promises.push(this.downloadChunk(i, startByte, endByte));
         }
 
         Promise.all(promises).then(() => {
-            if (!this.aborted) {
-                this.emit('end', { filePath: this.filePath });
-            }
+            if (!this.aborted) this.emit('end', { filePath: this.filePath });
         }).catch(err => {
             if (!this.aborted) {
                 this.aborted = true;
@@ -157,162 +141,136 @@ class MultiThreadEngine extends EventEmitter {
         });
     }
 
-    async downloadChunk(index, originalStartByte, endByte, retryCount = 0) {
+    async downloadChunk(index, startByte, endByte, retryCount = 0) {
         const MAX_RETRIES = 10;
-        let startByte = originalStartByte;
-
         while (retryCount < MAX_RETRIES) {
             if (this.aborted) return;
             
+            // Tunggu jika sedang dipause
+            while (this.isPaused && !this.aborted) {
+                await new Promise(resolve => {
+                    this.pauseResolvers.push(resolve);
+                });
+            }
+            if (this.aborted) return;
+
             try {
                 await new Promise((resolve, reject) => {
                     const parsedUrl = new URL(this.url);
                     const client = parsedUrl.protocol === 'https:' ? https : http;
-                    
-                    let chunkHeaders = Object.assign({}, this.headers, {
-                        'Range': `bytes=${startByte}-${endByte}`
-                    });
-                    
-                    let options = { method: 'GET', headers: chunkHeaders };
-
+                    let options = { 
+                        method: 'GET', 
+                        headers: Object.assign({}, this.headers, { 'Range': `bytes=${startByte}-${endByte}` }) 
+                    };
                     let req = client.request(this.url, options, (res) => {
-                        if (res.statusCode >= 400) {
-                            return reject(new Error(`Chunk ${index} blocked, HTTP ${res.statusCode}`));
-                        }
-
-                        // Piping exactly in its own stream partition offset range
+                        if (res.statusCode >= 400) return reject(new Error(`HTTP ${res.statusCode}`));
                         let stream = fs.createWriteStream(this.filePath, { flags: 'r+', start: startByte });
                         this.streams.push(stream);
-
                         res.on('data', chunk => {
                             if (this.aborted) { res.destroy(); return; }
+                            if (this.isPaused) { 
+                                req.destroy(); 
+                                return; 
+                            }
                             this.downloaded += chunk.length;
-                            startByte += chunk.length; // Majukan titik startResume secara presisi per byte
+                            startByte += chunk.length;
+                            if (this.chunkProgress[index]) {
+                                this.chunkProgress[index].currentByte = startByte;
+                            }
                             this.reportProgress();
                         });
-                        
                         res.pipe(stream);
-
-                        res.on('end', () => { resolve(); });
-                        res.on('error', (err) => { reject(err); });
+                        res.on('end', resolve);
+                        res.on('error', reject);
+                        stream.on('error', reject);
                     });
-
-                    req.on('error', reject);
+                    req.on('error', (err) => {
+                        if (this.isPaused) resolve(); // Jangan count sebagai error saat pause
+                        else reject(err);
+                    });
                     req.end();
                     this.reqs.push(req);
                 });
-                
-                // Terkuras 100% tuntas tanpa error putus
                 return;
-                
             } catch (err) {
-                if (this.aborted) return; // Silent jika dibatalkan secara disengaja
+                if (this.aborted) return;
+                if (this.isPaused) continue; // Retry dari posisi terakhir setelah resume
                 retryCount++;
-                console.log(`[MT-Engine] Chunk ${index} connection dropped (${err.message}). Auto-Resuming at byte ${startByte}... (${retryCount}/${MAX_RETRIES})`);
-                await new Promise(r => setTimeout(r, 2000)); // Jeda 2 detik sebelum nyambung lagi
+                await new Promise(r => setTimeout(r, 2000));
             }
         }
-        throw new Error(`Chunk ${index} failed permanently after ${MAX_RETRIES} timeout/ECONNRESET retries.`);
+        throw new Error(`Chunk ${index} failed after ${MAX_RETRIES} retries.`);
     }
 
     reportProgress() {
         let now = Date.now();
-        // Throttle aggregator to UI screen so desktop UI doesn't hang re-rendering 16 signals at once
         if (now - this.lastProgressTime >= 1000 || this.downloaded === this.totalSize) {
             let timeDiff = (now - this.lastProgressTime) / 1000;
             let byteDiff = this.downloaded - this.lastDownloaded;
             let speed = byteDiff / timeDiff;
-
             this.emit('progress', {
                 progress: (this.downloaded / this.totalSize) * 100,
                 downloaded: this.downloaded,
                 total: this.totalSize,
                 speed: speed
             });
-
-            this.lastProgressTime = now;
             this.lastProgressTime = now;
             this.lastDownloaded = this.downloaded;
         }
     }
 
     stop() {
-        return new Promise((resolve) => {
-            this.aborted = true;
-            this.reqs.forEach(req => {
-                try { req.destroy(); } catch (e) {}
-            });
-            this.streams.forEach(stream => {
-                try { stream.close(); } catch (e) {}
-            });
-            
-            if (this.fallbackDl) {
-                try { this.fallbackDl.stop(); } catch (e) {}
+        this.aborted = true;
+        this.reqs.forEach(req => { try { req.destroy(); } catch (e) {} });
+        this.streams.forEach(stream => { try { stream.close(); } catch (e) {} });
+        if (this.fallbackDl) this.fallbackDl.stop();
+        // Bangunkan semua pause waiters
+        this.pauseResolvers.forEach(r => r());
+        this.pauseResolvers = [];
+        setTimeout(() => {
+            if (fs.existsSync(this.filePath)) {
+                try { fs.unlinkSync(this.filePath); } catch(e) {}
             }
-            
-            // Allow streams to safely flush and close Native OS handles
-            // Then instantly delete the half-downloaded/corrupted sparse file from disk
-            setTimeout(() => {
-                if (fs.existsSync(this.filePath)) {
-                    try { fs.unlinkSync(this.filePath); } catch(e) {}
-                }
-                
-                // If Single Thread Fallback engine was used, attempt to delete its tracked file too
-                if (this.fallbackDl && this.fallbackDl.getDownloadPath) {
-                    let fallbackPath = this.fallbackDl.getDownloadPath();
-                    if (fallbackPath && fs.existsSync(fallbackPath)) {
-                        try { fs.unlinkSync(fallbackPath); } catch(e) {}
-                    }
-                }
-                
-                resolve();
-            }, 500);
-        });
+        }, 500);
     }
 
     pause() {
         if (this.fallbackDl) {
-            try { this.fallbackDl.pause(); } catch(e) {}
+            this.fallbackDl.pause();
         } else {
-            console.log("Pause is not natively supported yet on MultiThread mode, falling back to soft-stop.");
-            this.stop(); 
+            // Multi-thread: set flag dan destroy koneksi aktif (file TIDAK dihapus)
+            this.isPaused = true;
+            this.reqs.forEach(req => { try { req.destroy(); } catch (e) {} });
+            this.reqs = [];
+            this.streams.forEach(stream => { try { stream.close(); } catch (e) {} });
+            this.streams = [];
         }
     }
 
     resume() {
         if (this.fallbackDl) {
-            try { this.fallbackDl.resume(); } catch(e) {}
+            this.fallbackDl.resume();
         } else {
-            console.log("Resume is not entirely supported yet on partial MT stream buffers.");
+            // Multi-thread: lepas flag pause, bangunkan semua chunk workers
+            this.isPaused = false;
+            this.pauseResolvers.forEach(r => r());
+            this.pauseResolvers = [];
         }
     }
 
     fallbackToSingleThread() {
-        let dhOptions = {
-            override: false,
-            resumeIfFileExists: true,
-            removeOnFail: false,
-            retry: false,
-            headers: this.headers
-        };
-        
-        // Jangan paksa terapkan nama dari MT-Engine jika ini sekadar placeholder kosong tanpa ekstensi
-        let isPlaceholder = (this.fileName === 'download' || this.fileName === 'file_download' || this.fileName === 'export' || !this.fileName.includes('.'));
-        if (!isPlaceholder) {
+        let dhOptions = { override: false, resumeIfFileExists: true, removeOnFail: false, retry: false, headers: this.headers };
+        if (this.fileName !== 'download' && this.fileName.includes('.')) {
             dhOptions.fileName = path.basename(this.filePath);
-        } else {
-            console.log(`[MT-Engine] Single-Thread Fallback: Membiarkan node-downloader-helper menebak nama & ekstensi secara otomatis.`);
         }
-
         this.fallbackDl = new DownloaderHelper(this.url, this.destFolder, dhOptions);
-
         this.fallbackDl.on('download', info => this.emit('download', Object.assign(info || {}, { engine: 'single' })));
         this.fallbackDl.on('progress', stats => this.emit('progress', Object.assign(stats, { total: stats.total })));
         this.fallbackDl.on('end', info => this.emit('end', info));
         this.fallbackDl.on('error', err => this.emit('error', err));
-        
         this.fallbackDl.start().catch(err => this.emit('error', err));
     }
 }
+
 
 module.exports = MultiThreadEngine;
