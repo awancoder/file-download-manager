@@ -23,11 +23,17 @@ class HttpDownloader extends EventEmitter {
      */
     start(id, url, downloadPath, filename, options = {}) {
         const title = filename || url.split('/').pop().split('?')[0] || 'Unknown_File';
+        // Limit string directly
+        const shortTitle = title.length > 150 ? title.substring(0, 150) + '...' : title;
         
-        this.logger.log(`[HTTP-DL] [${id}] Starting HTTP download`);
-        this.logger.log(`[HTTP-DL] [${id}] URL: ${url}`);
-        this.logger.log(`[HTTP-DL] [${id}] Folder: ${downloadPath}`);
-        this.logger.log(`[HTTP-DL] [${id}] Filename: ${title}`);
+        // Save to tracking for pause/resume/cancel logs
+        if (!this.fileNames) this.fileNames = {};
+        this.fileNames[id] = shortTitle;
+        
+        this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") Starting HTTP download`);
+        this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") URL: ${url}`);
+        this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") Folder: ${downloadPath}`);
+        this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") Filename: ${title}`);
 
         let dynamicHeaders = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -52,7 +58,7 @@ class HttpDownloader extends EventEmitter {
             });
 
             dl.on('download', (info) => {
-                this.logger.log(`[HTTP-DL] [${id}] ✅ Download STARTED. Engine: ${info.engine}, File: ${info.fileName || title}`);
+                this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") ✅ Download STARTED. Engine: ${info.engine}, File: ${info.fileName || title}`);
                 this.emit('started', { id, engine: info.engine, fileName: info.fileName || title });
             });
 
@@ -61,27 +67,47 @@ class HttpDownloader extends EventEmitter {
             });
 
             dl.on('end', (info) => {
-                this.logger.log(`[HTTP-DL] [${id}] ✅ Download COMPLETED: ${info.filePath}`);
+                const finalFilename = info.fileName || title;
+
+                // --- Google Drive Auth Failure Detection ---
+                if (url.includes('google.com') && (finalFilename === 'identifier' || finalFilename.includes('ServiceLogin'))) {
+                    // Delete the dummy HTML file downloaded
+                    try { require('fs').unlinkSync(info.filePath); } catch(e) {}
+                    
+                    const errorMsg = "Auth Failed! Google redirected this download to a Login page. RECOMMENDED: Please click download normally in Chrome and let our Browser Extension intercept it so it can inject your active Google Cookies.";
+                    this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") ❌ Download FAILED (Google Auth Blocked)`);
+                    this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") 💡 ${errorMsg}`);
+                    
+                    this.emit('error', { id, error: "Auth Blocked: Use Browser Extension to capture cookies" });
+                    
+                    delete this.downloads[id];
+                    if (this.fileNames) delete this.fileNames[id];
+                    return;
+                }
+
+                this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") ✅ Download COMPLETED: ${info.filePath}`);
                 this.emit('complete', { id, filePath: info.filePath, fileName: title });
                 delete this.downloads[id];
+                if (this.fileNames) delete this.fileNames[id];
             });
 
             dl.on('error', (err) => {
-                this.logger.log(`[HTTP-DL] [${id}] ❌ Download ERROR: ${err.message}`);
+                this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") ❌ Download ERROR: ${err.message}`);
                 this.emit('error', { id, error: err.message });
                 delete this.downloads[id];
+                delete this.fileNames[id];
             });
 
             dl.start().catch(err => {
-                this.logger.log(`[HTTP-DL] [${id}] ❌ Start FAILED: ${err.message}`);
+                this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") ❌ Start FAILED: ${err.message}`);
                 this.emit('error', { id, error: err.message });
             });
 
             this.downloads[id] = dl;
-            this.logger.log(`[HTTP-DL] [${id}] Engine initialized. Threads: 16. Ready.`);
+            this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") Engine initialized. Threads: 16. Ready.`);
 
         } catch(err) {
-            this.logger.log(`[HTTP-DL] [${id}] ❌ Engine INIT FAILED: ${err.message}`);
+            this.logger.log(`[HTTP-DL] [${id}] ("${shortTitle}") ❌ Engine INIT FAILED: ${err.message}`);
             this.emit('error', { id, error: err.message });
         }
     }
@@ -91,12 +117,13 @@ class HttpDownloader extends EventEmitter {
      * @param {string} id - Download ID
      */
     pause(id) {
+        const title = this.fileNames && this.fileNames[id] ? `("${this.fileNames[id]}") ` : '';
         if (this.downloads[id]) {
-            this.logger.log(`[HTTP-DL] [${id}] ⏸️ PAUSE requested`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}⏸️ PAUSE requested`);
             this.downloads[id].pause();
-            this.logger.log(`[HTTP-DL] [${id}] ⏸️ PAUSED`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}⏸️ PAUSED`);
         } else {
-            this.logger.log(`[HTTP-DL] [${id}] ⚠️ Download not found for pause`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}⚠️ Download not found for pause`);
         }
     }
 
@@ -105,12 +132,13 @@ class HttpDownloader extends EventEmitter {
      * @param {string} id - Download ID
      */
     resume(id) {
+        const title = this.fileNames && this.fileNames[id] ? `("${this.fileNames[id]}") ` : '';
         if (this.downloads[id]) {
-            this.logger.log(`[HTTP-DL] [${id}] ▶️ RESUME requested`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}▶️ RESUME requested`);
             this.downloads[id].resume();
-            this.logger.log(`[HTTP-DL] [${id}] ▶️ RESUMED`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}▶️ RESUMED`);
         } else {
-            this.logger.log(`[HTTP-DL] [${id}] ⚠️ Download not found for resume`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}⚠️ Download not found for resume`);
         }
     }
 
@@ -119,13 +147,15 @@ class HttpDownloader extends EventEmitter {
      * @param {string} id - Download ID
      */
     cancel(id) {
+        const title = this.fileNames && this.fileNames[id] ? `("${this.fileNames[id]}") ` : '';
         if (this.downloads[id]) {
-            this.logger.log(`[HTTP-DL] [${id}] 🛑 CANCEL requested`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}🛑 CANCEL requested`);
             this.downloads[id].stop();
             delete this.downloads[id];
-            this.logger.log(`[HTTP-DL] [${id}] 🛑 CANCELLED`);
+            if (this.fileNames) delete this.fileNames[id];
+            this.logger.log(`[HTTP-DL] [${id}] ${title}🛑 CANCELLED`);
         } else {
-            this.logger.log(`[HTTP-DL] [${id}] ⚠️ Download not found for cancel`);
+            this.logger.log(`[HTTP-DL] [${id}] ${title}⚠️ Download not found for cancel`);
         }
     }
 

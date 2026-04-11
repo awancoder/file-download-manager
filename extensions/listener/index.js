@@ -2,19 +2,35 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 
-let logStream = null;
+let logPath = '';
 try {
     const homeDir = process.env.USERPROFILE || process.env.HOME || '.';
-    const logPath = path.join(homeDir, 'fdm-extension.log');
-    logStream = fs.createWriteStream(logPath, { flags: 'a' });
+    logPath = path.join(homeDir, 'fdm-extension.log');
 } catch(e) {}
 
 function log(msg) {
-    const timestamp = new Date().toISOString();
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const timestamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    
     const line = `[${timestamp}] ${msg}\n`;
     console.log(msg);
-    if (logStream) logStream.write(line);
+    if (logPath) {
+        fs.appendFile(logPath, line, (err) => {});
+    }
 }
+
+process.on('uncaughtException', (err) => {
+    if (err.code === 'ENOBUFS') {
+        log(`[WARNING] System buffer limit reached (ENOBUFS). Silently dropping uTP/UDP packet.`);
+    } else {
+        log(`[CRITICAL] Uncaught EXCEPTION: ${err.message}\n${err.stack}`);
+    }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    log(`[CRITICAL] Unhandled REJECTION: ${reason}`);
+});
 
 log("=== Ekstensi Memulai (Startup) ===");
 log(`CWD: ${process.cwd()}`);

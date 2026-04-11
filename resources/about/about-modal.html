@@ -1,0 +1,39 @@
+<div class="modal-content" style="max-width: 450px;">
+    <div class="modal-header">
+        <h2>About</h2>
+        <button class="btn-close-modal" onclick="closeAboutModal()">&times;</button>
+    </div>
+    <div class="modal-body"
+        style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; text-align: center;">
+
+        <div style="margin-bottom: 1rem;">
+            <!-- App Logo -->
+            <img src="/icons/appIcon.png" alt="App Logo" width="80" height="80"
+                style="margin: 0 auto; display: block; border-radius: 16px;">
+        </div>
+
+        <h3 style="margin: 0; color: var(--text-main); font-size: 1.5rem;">File Download Manager</h3>
+
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.95rem;">
+            File Download Manager is a super-lightweight and innovative open-source desktop software, tailored
+            specifically for capturing and downloading massive files in parallel, directly to your PC.
+        </p>
+
+        <div
+            style="background: var(--bg-dark); border: 1px solid var(--border-light); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+            <p style="margin: 0 0 0.5rem 0; color: var(--text-main);"><strong>Version:</strong> <span
+                    id="appVersionAbout">v1.0.0</span></p>
+            <p style="margin: 0; color: var(--text-muted);">
+                <a href="#" onclick="Neutralino.os.open('https://filedownloadmanager.awandigitals.com'); return false;"
+                    style="color: var(--accent-main); text-decoration: none;">
+                    https://filedownloadmanager.awandigitals.com
+                </a>
+            </p>
+        </div>
+
+    </div>
+    <div class="modal-footer"
+        style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-light); display: flex; justify-content: center;">
+        <button class="btn-primary" onclick="closeAboutModal()" style="min-width: 120px;">Close</button>
+    </div>
+</div>

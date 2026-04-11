@@ -290,10 +290,14 @@ class TorrentDownloader extends EventEmitter {
             let wireCount = 0;
             torrent.on('wire', (wire, addr) => {
                 wireCount++;
+                let shortName = torrent.name || filename || 'File_Tahap_Loading';
+                if (shortName.endsWith('.torrent')) shortName = shortName.slice(0, -8);
+                if (shortName.length > 150) shortName = shortName.substring(0, 150) + '...';
+                
                 if (wireCount <= 5) {
-                    this.logger.log(`[TORRENT] [${id}] 🔗 Peer ${wireCount}: ${addr} (active: ${torrent.numPeers})`);
+                    this.logger.log(`[TORRENT] [${id}] ("${shortName}") 🔗 Peer ${wireCount}: ${addr} (active: ${torrent.numPeers})`);
                 } else if (wireCount % 20 === 0) {
-                    this.logger.log(`[TORRENT] [${id}] 🔗 Total connections: ${wireCount}, Active peers: ${torrent.numPeers}`);
+                    this.logger.log(`[TORRENT] [${id}] ("${shortName}") 🔗 Total connections: ${wireCount}, Active peers: ${torrent.numPeers}`);
                 }
             });
 

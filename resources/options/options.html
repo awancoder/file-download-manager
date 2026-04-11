@@ -1,23 +1,81 @@
-<div class="modal-header">
-    <h2>App Settings</h2>
-    <button class="btn-close-modal" onclick="closeSettingsModal()">&times;</button>
+<style>
+.settings-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+    gap: 1rem;
+    background: rgba(0,0,0,0.1);
+}
+.settings-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-dark);
+}
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+.tab-btn:hover {
+    color: var(--text-main);
+    background: rgba(255,255,255,0.05);
+}
+.tab-btn.active {
+    color: var(--accent-main);
+    border-bottom-color: var(--accent-main);
+    background: rgba(255,255,255,0.05);
+}
+.tab-content {
+    display: none;
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.tab-content.active {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+</style>
+
+<div class="settings-header">
+    <button class="btn-icon-action" onclick="closeSettingsPage()" title="Back" style="margin: 0; padding: 0.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+    </button>
+    <h2 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Settings</h2>
 </div>
-<div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+
+<div class="settings-tabs">
+    <button class="tab-btn active" onclick="switchSettingsTab('tab-general')">General</button>
+    <button class="tab-btn" onclick="switchSettingsTab('tab-http')">HTTP</button>
+    <button class="tab-btn" onclick="switchSettingsTab('tab-torrent')">Torrent</button>
+</div>
+
+<!-- GENERAL TAB -->
+<div id="tab-general" class="tab-content active">
+    <!-- Default Download Folder -->
     <div class="setting-item">
-        <label
-            style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Default
-            Download Folder</label>
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Default Download Folder</label>
         <div style="display: flex; gap: 8px;">
-            <input type="text" id="settingDirText" readonly
-                style="flex: 1; background: var(--bg-dark); color: var(--text-muted); border: 1px solid var(--border-light); padding: 0.5rem; border-radius: 4px;">
-            <button class="btn-primary" onclick="changeDownloadDir()"
-                style="white-space: nowrap;">Change Folder</button>
+            <input type="text" id="settingDirText" readonly style="flex: 1; background: var(--bg-dark); color: var(--text-muted); border: 1px solid var(--border-light); padding: 0.5rem; border-radius: 4px;">
+            <button class="btn-primary" onclick="changeDownloadDir()" style="white-space: nowrap;">Change Folder</button>
         </div>
     </div>
-
+    
+    <!-- Run at Startup -->
     <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
-        <label
-            style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Run at Startup</label>
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Run at Startup</label>
         <div style="display: flex; align-items: center; gap: 12px;">
             <label class="toggle-switch">
                 <input type="checkbox" id="settingStartup" onchange="toggleStartupSetting(this.checked)">
@@ -25,34 +83,40 @@
             </label>
             <span id="startupStatusText" style="font-size: 0.85rem; color: var(--text-muted);">Off</span>
         </div>
-        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
-            When enabled, the app will automatically start minimized to the system tray when your PC boots up.</p>
+        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">When enabled, the app will automatically start minimized to the system tray when your PC boots up.</p>
     </div>
 
+    <!-- Extension Log File -->
     <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
-        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Torrent Max Connections
-            <span id="torrentMaxConnsValue" style="font-weight: 400; font-size: 0.85rem; color: var(--accent-secondary); margin-left: 6px;">500</span>
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Extension Log File
+            <span id="logFileSize" style="font-weight: 400; font-size: 0.8rem; color: var(--text-muted); margin-left: 6px;"></span>
         </label>
-        <input type="range" id="settingTorrentMaxConns" min="0" max="2000" step="50" value="500"
-            oninput="saveTorrentMaxConns(this.value)"
-            style="width: 100%; accent-color: var(--accent-secondary); cursor: pointer;">
-        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
-            <span>0</span>
-            <span style="color: var(--accent-secondary);">500 (recommended)</span>
-            <span id="torrentMaxConnsMax">2000</span>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn-primary" onclick="openLogFile()" style="padding: 0.5rem 0.75rem; font-size: 0.85rem;">Open Log</button>
+            <button class="btn-danger" onclick="deleteLogFile()" style="padding: 0.5rem 0.75rem; font-size: 0.85rem;">Delete Log</button>
         </div>
-        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
-            Maximum peer connections per torrent. Higher = potentially faster but uses more resources. Applied on next torrent download.</p>
     </div>
 
+    <!-- Kill All Active Downloads -->
     <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
-        <label
-            style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Browser
-            Integration</label>
-        <button class="btn-success" onclick="installExtensionUI()"
-            style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0.75rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="app-icon"
-                stroke="currentColor" stroke-width="2" style="margin: 0;">
+        <label style="display: block; margin-bottom: 8px; color: var(--danger); font-weight: 600;">Emergency</label>
+        <button class="btn-danger" onclick="killAllDownloads()" style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0.75rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+            Kill All Active Downloads
+        </button>
+        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Immediately stop and cancel all active HTTP and Torrent downloads.</p>
+    </div>
+</div>
+
+<!-- HTTP TAB -->
+<div id="tab-http" class="tab-content">
+    <div class="setting-item">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Browser Integration</label>
+        <button class="btn-success" onclick="installExtensionUI()" style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0.75rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="app-icon" stroke="currentColor" stroke-width="2" style="margin: 0;">
                 <circle cx="12" cy="12" r="10"></circle>
                 <circle cx="12" cy="12" r="4"></circle>
                 <line x1="21.17" y1="8" x2="12" y2="8"></line>
@@ -61,21 +125,27 @@
             </svg>
             Install / Setup Chrome Extension
         </button>
-        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
-            Integrating the extension allows this app to automatically grab huge files and cookies
-            directly from Google Chrome securely.</p>
+        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Integrating the extension allows this app to automatically grab huge files and cookies directly from Google Chrome securely.</p>
     </div>
+</div>
 
-    <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
-        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Extension Log File
-            <span id="logFileSize" style="font-weight: 400; font-size: 0.8rem; color: var(--text-muted); margin-left: 6px;"></span>
+<!-- TORRENT TAB -->
+<div id="tab-torrent" class="tab-content">
+    <!-- Torrent Max Connections -->
+    <div class="setting-item">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Torrent Max Connections
+            <span id="torrentMaxConnsValue" style="font-weight: 400; font-size: 0.85rem; color: var(--accent-secondary); margin-left: 6px;">500</span>
         </label>
-        <div style="display: flex; gap: 8px;">
-            <button class="btn-primary" onclick="openLogFile()" style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.85rem;">Open Log</button>
-            <button class="btn-danger" onclick="deleteLogFile()" style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.85rem;">Delete Log</button>
+        <input type="range" id="settingTorrentMaxConns" min="0" max="2000" step="50" value="500" oninput="saveTorrentMaxConns(this.value)" style="width: 100%; accent-color: var(--accent-secondary); cursor: pointer;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+            <span>0</span>
+            <span style="color: var(--accent-secondary);">500 (recommended)</span>
+            <span id="torrentMaxConnsMax">2000</span>
         </div>
+        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Maximum peer connections per torrent. Higher = potentially faster but uses more resources. Applied on next torrent download.</p>
     </div>
 
+    <!-- WebTorrent Engine -->
     <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
         <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">WebTorrent Engine
             <span id="wtVersionInfo" style="font-weight: 400; font-size: 0.8rem; color: var(--text-muted); margin-left: 6px;"></span>
@@ -94,23 +164,6 @@
             <button class="btn-primary" id="btnWtCheck" onclick="checkWebTorrentVersion()" style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.85rem;">Check Update</button>
             <button class="btn-success" id="btnWtUpdate" onclick="updateWebTorrent()" style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.85rem;" disabled>Update</button>
         </div>
-        <p id="wtUpdateStatus" style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
-            Check for newer version of the WebTorrent engine. Update requires internet connection and app restart.</p>
-    </div>
-
-    <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
-        <label
-            style="display: block; margin-bottom: 8px; color: var(--danger); font-weight: 600;">Kill All Active Downloads</label>
-        <button class="btn-danger" onclick="killAllDownloads()"
-            style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0.75rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-            </svg>
-            Kill All Downloads
-        </button>
-        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
-            Immediately stop and cancel all active HTTP and Torrent downloads.</p>
+        <p id="wtUpdateStatus" style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Check for newer version of the WebTorrent engine. Update requires internet connection and app restart.</p>
     </div>
 </div>

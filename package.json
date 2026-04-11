@@ -1,11 +1,11 @@
 {
   "name": "file-download-manager",
-  "version": "26.3.24",
+  "version": "26.4.11",
   "description": "File Download Manager is a free and open-source software for downloading files and videos from the internet.",
   "main": "resources/index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "versi": "node versioning.js",
+    "version": "node versioning.js",
     "build": "node build.js"
   },
   "keywords": [],

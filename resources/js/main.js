@@ -113,6 +113,8 @@ function initTableResizers() {
 
 async function initApp() {
     Neutralino.init();
+    
+    Neutralino.window.setTitle(`File Download Manager v${window.NL_APPVERSION || '1.0.0'}`);
 
     // Handler saat tombol [X] diklik (Hanya sembunyikan jendela, jangan matikan aplikasi)
     Neutralino.events.on('windowClose', () => {

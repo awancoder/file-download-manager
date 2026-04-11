@@ -2,7 +2,7 @@
 ; KUSTOMISASI UNTUK FILE DOWNLOAD MANAGER
 ; ============================================================
 #define MyAppName "File Download Manager"           ; Nama Aplikasi
-#define MyAppVersion "26.3.24"                     ; Versi (dari neutralino.config.json)
+#define MyAppVersion "26.4.11"                     ; Versi (dari neutralino.config.json)
 #define MyAppPublisher "Awan Digitals"             ; Publisher
 #define MyAppExeName "FileDownloadManager.exe"      ; Nama file .exe eksekusi utama
 #define MyIconFile "resources\icons\appIcon.ico"    ; Path ke file ikon aplikasi
@@ -28,7 +28,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\appIcon.ico
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 ; Force close the app before install if still running
 CloseApplications=yes
 CloseApplicationsFilter=file-download-manager.exe

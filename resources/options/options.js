@@ -3,9 +3,7 @@ let optionsLoaded = false;
 
 async function optionsInit() {
     if (optionsLoaded) return;
-    const container = document.getElementById('settingsModal');
-    if (!container) return;
-    const inner = container.querySelector('.modal-content');
+    const inner = document.getElementById('settingsContent');
     if (!inner) return;
     try {
         const resp = await fetch('/options/options.html');
@@ -18,7 +16,7 @@ async function optionsInit() {
     }
 }
 
-async function showSettingsModal() {
+async function showSettingsPage() {
     await optionsInit();
 
     let el = document.getElementById('settingDirText');
@@ -42,12 +40,62 @@ async function showSettingsModal() {
     let maxConnsValue = document.getElementById('torrentMaxConnsValue');
     if (maxConnsValue) maxConnsValue.innerText = torrentMaxConns;
 
-    document.getElementById('settingsModal').style.display = 'flex';
+    document.getElementById('settingsPage').style.display = 'flex';
+
+    let ab = document.querySelector('.action-bar-container');
+    if (ab) ab.style.display = 'none';
+    let tc = document.querySelector('.table-container');
+    if (tc) tc.style.display = 'none';
+    let pc = document.querySelector('.pagination-controls');
+    if (pc) pc.style.display = 'none';
+    
+    let tp = document.getElementById('terminalPanel');
+    if (tp) {
+        if (tp.style.display !== 'none') {
+            tp.dataset.wasOpen = 'true';
+            tp.style.display = 'none';
+        } else {
+            tp.dataset.wasOpen = 'false';
+        }
+    }
+
     refreshLogFileSize();
 }
 
-function closeSettingsModal() {
-    document.getElementById('settingsModal').style.display = 'none';
+function closeSettingsPage() {
+    document.getElementById('settingsPage').style.display = 'none';
+
+    let ab = document.querySelector('.action-bar-container');
+    if (ab) ab.style.display = 'flex';
+    let tc = document.querySelector('.table-container');
+    if (tc) tc.style.display = 'block';
+    let pc = document.querySelector('.pagination-controls');
+    if (pc) pc.style.display = 'flex';
+
+    let tp = document.getElementById('terminalPanel');
+    if (tp && tp.dataset.wasOpen === 'true') {
+        tp.style.display = 'flex';
+        tp.dataset.wasOpen = 'false';
+    }
+}
+
+function switchSettingsTab(tabId) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.remove('active');
+    });
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Activate selected tab content
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) selectedTab.classList.add('active');
+
+    // Activate selected button
+    const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+    if (activeBtn) activeBtn.classList.add('active');
 }
 
 async function toggleStartupSetting(enabled) {
@@ -206,7 +254,7 @@ async function killAllDownloads() {
 
     try { await Neutralino.storage.setData('downloadHistory', JSON.stringify(historyData)); } catch (e) { }
     renderPage();
-    closeSettingsModal();
+    closeSettingsPage();
 
     await Neutralino.os.showMessageBox('Kill All', `${killedCount} active download(s) have been stopped.`, 'OK', 'INFO').catch(() => {});
 }
