@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Download Manager - Fast & Secure Downloader for Windows</title>
+    <meta name="description"
+        content="Download files faster with our free, secure, and easy-to-use File Download Manager for Windows. Supports HTTP, HTTPS, torrents, and multi-threading.">
+    <meta name="keywords"
+        content="file download manager, internet download manager, download accelerator, free download manager, multi-threaded downloader, torrent downloader, windows download manager">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://awandigitals.com/">
+    <meta property="og:title" content="File Download Manager - Fast & Secure">
+    <meta property="og:description"
+        content="Download files faster with our free, secure, and easy-to-use File Download Manager for Windows. Supports HTTP, HTTPS, torrents, and multi-threading.">
+    <meta property="og:image" content="https://awandigitals.com/screenshoot/main.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://awandigitals.com/">
+    <meta property="twitter:title" content="File Download Manager - Fast & Secure">
+    <meta property="twitter:description"
+        content="Download files faster with our free, secure, and easy-to-use File Download Manager for Windows. Supports HTTP, HTTPS, torrents, and multi-threading.">
+    <meta property="twitter:image" content="https://awandigitals.com/screenshoot/main.jpg">
+
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#4f46e5', // Indigo 600
+                        'primary-foreground': '#ffffff',
+                        accent: '#4338ca', // Indigo 700
+                        foreground: '#111827', // Gray 900
+                        border: '#e5e7eb', // Gray 200
+                        muted: {
+                            DEFAULT: '#f9fafb', // Gray 50
+                            foreground: '#6b7280', // Gray 500
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .accordion-content {
+            display: none;
+        }
+
+        .accordion-trigger.expanded [data-lucide="chevron-down"] {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+
+<body class="font-sans antialiased bg-white text-foreground">
+    <div class="w-full">
+        <!-- Navigation -->
+        <nav class="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-border z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div
+                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+                        <i data-lucide="download" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold text-foreground">File Download Manager</span>
+                </div>
+                <!-- Menu (Desktop) -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm text-muted-foreground hover:text-foreground transition">
+                        Features
+                    </a>
+                    <a href="#guide" class="text-sm text-muted-foreground hover:text-foreground transition">
+                        How it Works
+                    </a>
+                    <a href="#faq" class="text-sm text-muted-foreground hover:text-foreground transition">
+                        FAQ
+                    </a>
+                    <a href="#contact" class="text-sm text-muted-foreground hover:text-foreground transition">
+                        Contact
+                    </a>
+                    <a href="https://contribute.awandigitals.com" target="_blank"
+                        class="text-sm text-muted-foreground hover:text-foreground transition">
+                        Contribute
+                    </a>
+                    <a href="https://github.com/awancoder/file-download-manager/releases/latest" target="_blank">
+                        <button
+                            class="border border-transparent bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer">
+                            Download
+                        </button>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
+                        Download Faster, Smarter, Safer
+                    </h1>
+                    <p class="text-xl text-muted-foreground mb-8 leading-relaxed">
+                        Manage all your downloads in one powerful application. With support for HTTP, HTTPS, and
+                        torrents, you'll get faster speeds and better control.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="https://github.com/awancoder/file-download-manager/releases/latest" target="_blank"
+                            class="bg-primary text-white hover:bg-primary/90 px-8 py-3 rounded-md font-medium text-lg flex items-center justify-center gap-2 transition cursor-pointer inline-flex">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                            Download Now
+                        </a>
+                        <!-- <button
+                            class="border border-border bg-white text-foreground hover:bg-muted px-8 py-3 rounded-md font-medium text-lg transition cursor-pointer">
+                            Learn More
+                        </button> -->
+                    </div>
+                    <div class="mt-8 flex items-center gap-8 text-sm text-muted-foreground flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-primary"></i>
+                            <span>100% Free</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-primary"></i>
+                            <span>Fast & Secure</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-primary"></i>
+                            <span>Easy to Use</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center">
+                    <div
+                        class="w-full max-w-sm aspect-square rounded-2xl bg-gradient-to-br from-indigo-50 to-primary/20 p-8 flex items-center justify-center shadow-xl">
+                        <i data-lucide="download" class="w-32 h-32 text-primary opacity-30"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Benefits -->
+        <section class="py-16 px-4 sm:px-6 lg:px-8 bg-muted">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-bold text-center text-foreground mb-12">
+                    Why Choose File Download Manager?
+                </h2>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Benefit 1 -->
+                    <div class="bg-white border-0 shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="zap" class="w-8 h-8 text-primary mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">Lightning Fast</h3>
+                        <p class="text-muted-foreground">
+                            Multi-threaded downloads accelerate your transfers up to 5x faster than standard browsers.
+                        </p>
+                    </div>
+                    <!-- Benefit 2 -->
+                    <div class="bg-white border-0 shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="shield" class="w-8 h-8 text-primary mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">Secure & Safe</h3>
+                        <p class="text-muted-foreground">
+                            Built-in virus scanning, SSL verification, and safe deletion ensure your files are
+                            protected.
+                        </p>
+                    </div>
+                    <!-- Benefit 3 -->
+                    <div class="bg-white border-0 shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="globe" class="w-8 h-8 text-primary mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">Multi-Protocol</h3>
+                        <p class="text-muted-foreground">
+                            Download from HTTP, HTTPS, and torrent sources all in one unified application.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="py-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-bold text-center text-foreground mb-12">
+                    Powerful Features
+                </h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Feature -->
+                    <div class="border border-border bg-white shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="globe" class="w-7 h-7 text-primary mb-3"></i>
+                        <h3 class="text-lg font-semibold mb-2">HTTP/HTTPS Downloads</h3>
+                        <p class="text-sm text-muted-foreground">Fast, reliable downloads from any web source with
+                            resume support.</p>
+                    </div>
+                    <!-- Feature -->
+                    <div class="border border-border bg-white shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="download" class="w-7 h-7 text-primary mb-3"></i>
+                        <h3 class="text-lg font-semibold mb-2">Torrent Support</h3>
+                        <p class="text-sm text-muted-foreground">Built-in torrent engine for P2P file sharing and
+                            downloads.</p>
+                    </div>
+                    <!-- Feature -->
+                    <div class="border border-border bg-white shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="zap" class="w-7 h-7 text-primary mb-3"></i>
+                        <h3 class="text-lg font-semibold mb-2">Multi-Threading</h3>
+                        <p class="text-sm text-muted-foreground">Accelerate downloads with parallel connections for
+                            maximum speed.</p>
+                    </div>
+                    <!-- Feature -->
+                    <div class="border border-border bg-white shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="bar-chart-2" class="w-7 h-7 text-primary mb-3"></i>
+                        <h3 class="text-lg font-semibold mb-2">Progress Monitoring</h3>
+                        <p class="text-sm text-muted-foreground">Real-time speed, ETA, and detailed progress tracking
+                            for all downloads.</p>
+                    </div>
+                    <!-- Feature -->
+                    <div class="border border-border bg-white shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="settings" class="w-7 h-7 text-primary mb-3"></i>
+                        <h3 class="text-lg font-semibold mb-2">Browser Extension</h3>
+                        <p class="text-sm text-muted-foreground">Seamless integration with Chrome, Firefox, and Edge
+                            browsers.</p>
+                    </div>
+                    <!-- Feature -->
+                    <div class="border border-border bg-white shadow-sm hover:shadow-md transition rounded-xl p-6">
+                        <i data-lucide="bar-chart-2" class="w-7 h-7 text-primary mb-3"></i>
+                        <h3 class="text-lg font-semibold mb-2">Usage Statistics</h3>
+                        <p class="text-sm text-muted-foreground">Detailed analytics on download history, speeds, and
+                            patterns.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screenshot Showcase Section -->
+        <section class="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-bold text-center text-foreground mb-4">
+                    See It In Action
+                </h2>
+                <p class="text-center text-muted-foreground mb-12 max-w-2xl mx-auto text-lg">
+                    Clean, intuitive interface with powerful download management at your fingertips.
+                </p>
+                <div class="rounded-2xl overflow-hidden shadow-2xl border border-border">
+                    <img src="screenshoot/main.png" alt="File Download Manager Application Interface"
+                        class="w-full h-auto" loading="lazy" />
+                </div>
+                <div class="grid md:grid-cols-3 gap-6 mt-12">
+                    <div class="bg-muted shadow-sm rounded-xl p-6 border-0">
+                        <h3 class="text-lg font-semibold mb-2">Manage Downloads</h3>
+                        <p class="text-sm text-muted-foreground">
+                            View all your downloads in one organized list with real-time status updates.
+                        </p>
+                    </div>
+                    <div class="bg-muted shadow-sm rounded-xl p-6 border-0">
+                        <h3 class="text-lg font-semibold mb-2">Track Progress</h3>
+                        <p class="text-sm text-muted-foreground">
+                            Monitor speed, ETA, and completion percentage for each file in real-time.
+                        </p>
+                    </div>
+                    <div class="bg-muted shadow-sm rounded-xl p-6 border-0">
+                        <h3 class="text-lg font-semibold mb-2">Quick Actions</h3>
+                        <p class="text-sm text-muted-foreground">
+                            Pause, resume, cancel, or delete downloads with a single click.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section class="py-16 px-4 sm:px-6 lg:px-8 bg-muted">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-bold text-center text-foreground mb-12">
+                    Get File Download Manager
+                </h2>
+                <div class="flex justify-center max-w-3xl mx-auto">
+                    <!-- Windows -->
+                    <div class="bg-white shadow-sm border-0 rounded-xl p-6 text-center w-full max-w-xs">
+                        <div class="text-4xl mb-4 flex justify-center">🪟</div>
+                        <h3 class="font-semibold text-lg mb-4">Windows</h3>
+                        <a href="https://github.com/awancoder/file-download-manager/releases/latest" target="_blank"
+                            class="w-full bg-foreground text-white hover:bg-foreground/90 px-4 py-2 rounded-md flex justify-center items-center gap-2 transition cursor-pointer inline-flex">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                            Download
+                        </a>
+                    </div>
+                </div>
+                <p class="text-center text-muted-foreground mt-8">
+                    Version 26.4.20 • Requires Windows 10+
+                </p>
+            </div>
+        </section>
+
+        <!-- How to Use Section -->
+        <section id="guide" class="py-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-bold text-center text-foreground mb-12">
+                    How to Get Started
+                </h2>
+                <div class="space-y-8">
+                    <!-- Step 1 -->
+                    <div class="bg-white shadow-sm border border-border rounded-xl p-6">
+                        <div class="flex gap-6">
+                            <div
+                                class="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                                <span class="text-lg font-bold text-white">1</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-foreground mb-2">Download & Install</h3>
+                                <p class="text-muted-foreground leading-relaxed">
+                                    Download the installer for your operating system and follow the simple setup wizard.
+                                    It takes less than a minute.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="bg-white shadow-sm border border-border rounded-xl p-6">
+                        <div class="flex gap-6">
+                            <div
+                                class="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                                <span class="text-lg font-bold text-white">2</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-foreground mb-2">Add Downloads</h3>
+                                <p class="text-muted-foreground leading-relaxed">
+                                    Paste a link, drag and drop a file, or use the browser extension to instantly
+                                    capture downloads from any website.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="bg-white shadow-sm border border-border rounded-xl p-6">
+                        <div class="flex gap-6">
+                            <div
+                                class="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                                <span class="text-lg font-bold text-white">3</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-foreground mb-2">Watch & Manage</h3>
+                                <p class="text-muted-foreground leading-relaxed">
+                                    Monitor real-time progress, pause, resume, or schedule downloads. Organize files
+                                    into custom categories.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="py-20 px-4 sm:px-6 lg:px-8 bg-muted">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-bold text-center text-foreground mb-12">
+                    Frequently Asked Questions
+                </h2>
+                <div class="space-y-4">
+                    <!-- FAQ Item 1 -->
+                    <div class="border border-border rounded-lg bg-white overflow-hidden">
+                        <button
+                            class="accordion-trigger w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 transition cursor-pointer">
+                            <span class="text-lg font-semibold">Is File Download Manager free?</span>
+                            <i data-lucide="chevron-down"
+                                class="w-5 h-5 text-gray-500 transition-transform duration-200"></i>
+                        </button>
+                        <div class="accordion-content px-6 pb-4 text-muted-foreground">
+                            Yes! File Download Manager can be downloaded and used for free.
+                        </div>
+                    </div>
+                    <!-- FAQ Item 2 -->
+                    <div class="border border-border rounded-lg bg-white overflow-hidden">
+                        <button
+                            class="accordion-trigger w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 transition cursor-pointer">
+                            <span class="text-lg font-semibold">Does it work with all websites?</span>
+                            <i data-lucide="chevron-down"
+                                class="w-5 h-5 text-gray-500 transition-transform duration-200"></i>
+                        </button>
+                        <div class="accordion-content px-6 pb-4 text-muted-foreground">
+                            It works with most HTTP and HTTPS websites. Some websites with special DRM protection may
+                            require additional configuration.
+                        </div>
+                    </div>
+                    <!-- FAQ Item 3 -->
+                    <div class="border border-border rounded-lg bg-white overflow-hidden">
+                        <button
+                            class="accordion-trigger w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 transition cursor-pointer">
+                            <span class="text-lg font-semibold">Can I use it for torrent downloads?</span>
+                            <i data-lucide="chevron-down"
+                                class="w-5 h-5 text-gray-500 transition-transform duration-200"></i>
+                        </button>
+                        <div class="accordion-content px-6 pb-4 text-muted-foreground">
+                            Absolutely! We have a built-in torrent engine that allows you to download torrents just like
+                            regular files.
+                        </div>
+                    </div>
+                    <!-- FAQ Item 4 -->
+                    <div class="border border-border rounded-lg bg-white overflow-hidden">
+                        <button
+                            class="accordion-trigger w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 transition cursor-pointer">
+                            <span class="text-lg font-semibold">How much faster is it than my browser?</span>
+                            <i data-lucide="chevron-down"
+                                class="w-5 h-5 text-gray-500 transition-transform duration-200"></i>
+                        </button>
+                        <div class="accordion-content px-6 pb-4 text-muted-foreground">
+                            With multi-threading enabled, you can see speed improvements of 2-5x compared to standard
+                            browser downloads.
+                        </div>
+                    </div>
+                    <!-- FAQ Item 5 -->
+                    <div class="border border-border rounded-lg bg-white overflow-hidden">
+                        <button
+                            class="accordion-trigger w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 transition cursor-pointer">
+                            <span class="text-lg font-semibold">Is my data secure?</span>
+                            <i data-lucide="chevron-down"
+                                class="w-5 h-5 text-gray-500 transition-transform duration-200"></i>
+                        </button>
+                        <div class="accordion-content px-6 pb-4 text-muted-foreground">
+                            Yes. We don't collect personal data. Your download history stays on your computer. All
+                            connections use SSL encryption.
+                        </div>
+                    </div>
+                    <!-- FAQ Item 6 -->
+                    <div class="border border-border rounded-lg bg-white overflow-hidden">
+                        <button
+                            class="accordion-trigger w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 transition cursor-pointer">
+                            <span class="text-lg font-semibold">What about the browser extension?</span>
+                            <i data-lucide="chevron-down"
+                                class="w-5 h-5 text-gray-500 transition-transform duration-200"></i>
+                        </button>
+                        <div class="accordion-content px-6 pb-4 text-muted-foreground">
+                            The browser extension seamlessly captures downloads and sends them to File Download Manager
+                            for faster processing.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <!-- <section id="contact" class="py-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto">
+                <div
+                    class="bg-gradient-to-br from-primary to-accent rounded-2xl p-8 sm:p-12 text-white text-center shadow-xl">
+                    <i data-lucide="mail" class="w-12 h-12 mx-auto mb-6"></i>
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-4">Need Help?</h2>
+                    <p class="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
+                        Have questions or feedback? We'd love to hear from you. Get in touch with our support team.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button
+                            class="bg-white/20 hover:bg-white/30 text-white border-0 px-8 py-3 rounded-md font-medium text-lg flex items-center justify-center gap-2 transition cursor-pointer">
+                            <i data-lucide="mail" class="w-5 h-5"></i>
+                            support@awandigitals.com
+                        </button>
+                        <button
+                            class="bg-white/20 hover:bg-white/30 text-white border-0 px-8 py-3 rounded-md font-medium text-lg transition cursor-pointer">
+                            Community Forum
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section> -->
+
+        <!-- CTA Section -->
+        <section class="py-16 px-4 sm:px-6 lg:px-8 bg-muted">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-6">
+                    Ready to Download Smarter?
+                </h2>
+                <p class="text-xl text-muted-foreground mb-8">
+                    Join thousands of users downloading files faster and safer.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="https://github.com/awancoder/file-download-manager/releases/latest" target="_blank"
+                        class="bg-primary text-white hover:bg-primary/90 px-8 py-3 rounded-md font-medium text-lg flex items-center justify-center gap-2 transition cursor-pointer w-full sm:w-auto inline-flex">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                        Download for Free
+                    </a>
+                    <a href="https://contribute.awandigitals.com" target="_blank" class="w-full sm:w-auto">
+                        <button
+                            class="border border-border bg-white text-foreground hover:bg-gray-50 px-8 py-3 rounded-md font-medium text-lg flex items-center justify-center gap-2 transition cursor-pointer w-full">
+                            <i data-lucide="heart" class="w-5 h-5 text-red-500"></i>
+                            Contribute
+                        </button>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-gray-50 border-t border-border py-12 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid md:grid-cols-4 gap-8 mb-8">
+                    <div class="md:col-span-1">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+                                <i data-lucide="download" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <span class="font-bold text-foreground">File Download Manager</span>
+                        </div>
+                        <p class="text-sm text-muted-foreground">
+                            Fast, secure, and easy-to-use download management for everyone.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-foreground mb-4">Product</h4>
+                        <ul class="space-y-2 text-sm text-muted-foreground">
+                            <li><a href="#features" class="hover:text-foreground transition">Features</a></li>
+                            <li><a href="#guide" class="hover:text-foreground transition">How to Use</a></li>
+                            <li><a href="#faq" class="hover:text-foreground transition">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-foreground mb-4">Support</h4>
+                        <ul class="space-y-2 text-sm text-muted-foreground">
+                            <li><a href="#contact" class="hover:text-foreground transition">Contact Us</a></li>
+                            <li><a href="#" class="hover:text-foreground transition">Documentation</a></li>
+                            <li><a href="#" class="hover:text-foreground transition">Community</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-foreground mb-4">Legal</h4>
+                        <ul class="space-y-2 text-sm text-muted-foreground">
+                            <li><a href="#" class="hover:text-foreground transition">Privacy Policy</a></li>
+                            <li><a href="#" class="hover:text-foreground transition">Terms of Service</a></li>
+                            <li><a href="#" class="hover:text-foreground transition">License</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-border pt-8">
+                    <p class="text-center text-sm text-muted-foreground">
+                        &copy; 2024 File Download Manager. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize Lucide Icons
+            lucide.createIcons();
+
+            // Accordion Logic
+            $('.accordion-trigger').click(function () {
+                const content = $(this).next('.accordion-content');
+
+                // Close others
+                $('.accordion-content').not(content).slideUp(200);
+                $('.accordion-trigger').not(this).removeClass('expanded');
+
+                // Toggle current
+                content.slideToggle(200);
+                $(this).toggleClass('expanded');
+            });
+        });
+    </script>
+</body>
+
+</html>

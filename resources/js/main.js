@@ -3,6 +3,9 @@ let downloads = {};
 let historyData = [];
 let startupEnabled = false;
 let torrentMaxConns = 500; // Default recommended
+let dnsProvider = 'system';
+let dnsCustomPrimary = '';
+let dnsCustomSecondary = '';
 
 let currentPage = 1;
 const itemsPerPage = 25;
@@ -456,6 +459,15 @@ async function initApp() {
             if (typeof settings.torrentMaxConns === 'number') {
                 torrentMaxConns = settings.torrentMaxConns;
             }
+            if (settings.dnsProvider) {
+                dnsProvider = settings.dnsProvider;
+            }
+            if (settings.dnsCustomPrimary) {
+                dnsCustomPrimary = settings.dnsCustomPrimary;
+            }
+            if (settings.dnsCustomSecondary) {
+                dnsCustomSecondary = settings.dnsCustomSecondary;
+            }
         }
     } catch (err) { }
 
@@ -500,6 +512,33 @@ async function initApp() {
     await loadColWidths();
     initTableResizers();
     renderPage();
+
+    // Send saved DNS config to backend on startup
+    if (dnsProvider && dnsProvider !== 'system') {
+        const DNS_MAP = {
+            google: { primary: '8.8.8.8', secondary: '8.8.4.4' },
+            cloudflare: { primary: '1.1.1.1', secondary: '1.0.0.1' },
+            'cloudflare-security': { primary: '1.1.1.2', secondary: '1.0.0.2' },
+            quad9: { primary: '9.9.9.9', secondary: '149.112.112.112' },
+            opendns: { primary: '208.67.222.222', secondary: '208.67.220.220' },
+            adguard: { primary: '94.140.14.14', secondary: '94.140.15.15' }
+        };
+        let dnsServers = null;
+        if (dnsProvider === 'custom' && dnsCustomPrimary) {
+            dnsServers = { primary: dnsCustomPrimary, secondary: dnsCustomSecondary || dnsCustomPrimary };
+        } else {
+            dnsServers = DNS_MAP[dnsProvider] || null;
+        }
+        if (dnsServers) {
+            setTimeout(() => {
+                Neutralino.extensions.dispatch('listener', 'action-download', {
+                    task: 'config',
+                    key: 'dnsServers',
+                    value: dnsServers
+                }).catch(() => { });
+            }, 3000); // Wait for backend to connect first
+        }
+    }
 }
 
 async function changeDownloadDir() {

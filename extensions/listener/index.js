@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const dnsConfig = require('./modules/dns-config');
 
 let logPath = '';
 try {
@@ -426,9 +427,18 @@ function handleDownloadAction(payload) {
 
     } else if (task === 'config') {
         const { key, value } = payload;
-        log(`⚙️ Config update: ${key} = ${value}`);
+        log(`⚙️ Config update: ${key} = ${JSON.stringify(value)}`);
         if (key === 'torrentMaxConns' && torrentDownloader && torrentDownloader.setMaxConns) {
             torrentDownloader.setMaxConns(value);
+        }
+        if (key === 'dnsServers') {
+            dnsConfig.setDnsServers(value);
+            const active = dnsConfig.activeLookup;
+            if (active) {
+                log(`🌐 Custom DNS active: ${value.primary} / ${value.secondary || value.primary}`);
+            } else {
+                log(`🌐 DNS restored to System Default`);
+            }
         }
 
     } else if (task === 'killall') {

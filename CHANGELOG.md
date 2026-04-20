@@ -2,6 +2,14 @@
 
 All notable changes to the File Download Manager application will be documented in this file.
 
+## [v26.4.20] - 2026-04-20
+
+### Added
+- **Custom DNS Provider:** Added a DNS provider option (Google, Cloudflare, Quad9, OpenDNS, AdGuard, or Custom) in the settings menu to help bypass ISP-level blocking on HTTPS downloads.
+
+### Fixed
+- Minor improvements and bug fixes.
+
 ## [v26.4.11] - 2026-04-11
 
 ### Added

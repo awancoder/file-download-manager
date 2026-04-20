@@ -27,6 +27,25 @@ async function showSettingsPage() {
     let statusText = document.getElementById('startupStatusText');
     if (statusText) statusText.innerText = startupEnabled ? 'On' : 'Off';
 
+    // DNS Provider
+    let dnsSelect = document.getElementById('settingDnsProvider');
+    if (dnsSelect) {
+        dnsSelect.value = dnsProvider || 'system';
+        let customContainer = document.getElementById('customDnsContainer');
+        if (customContainer) customContainer.style.display = dnsProvider === 'custom' ? 'block' : 'none';
+        if (dnsProvider === 'custom') {
+            let p = document.getElementById('settingDnsPrimary');
+            let s = document.getElementById('settingDnsSecondary');
+            if (p) p.value = dnsCustomPrimary || '';
+            if (s) s.value = dnsCustomSecondary || '';
+        }
+    }
+    let badge = document.getElementById('dnsStatusBadge');
+    if (badge) {
+        if (dnsProvider && dnsProvider !== 'system') badge.innerText = 'Active';
+        else badge.innerText = '';
+    }
+
     let maxConnsInput = document.getElementById('settingTorrentMaxConns');
     if (maxConnsInput) {
         const cores = navigator.hardwareConcurrency || 4;
@@ -168,6 +187,75 @@ async function saveTorrentMaxConns(value) {
         task: 'config',
         key: 'torrentMaxConns',
         value: torrentMaxConns
+    }).catch(() => { });
+}
+
+// DNS Provider mapping
+const DNS_SERVERS = {
+    system: null,
+    google: { primary: '8.8.8.8', secondary: '8.8.4.4' },
+    cloudflare: { primary: '1.1.1.1', secondary: '1.0.0.1' },
+    'cloudflare-security': { primary: '1.1.1.2', secondary: '1.0.0.2' },
+    quad9: { primary: '9.9.9.9', secondary: '149.112.112.112' },
+    opendns: { primary: '208.67.222.222', secondary: '208.67.220.220' },
+    adguard: { primary: '94.140.14.14', secondary: '94.140.15.15' }
+};
+
+async function saveDnsSetting() {
+    let select = document.getElementById('settingDnsProvider');
+    if (!select) return;
+    let val = select.value;
+    dnsProvider = val;
+
+    // Toggle custom input visibility
+    let customContainer = document.getElementById('customDnsContainer');
+    if (customContainer) customContainer.style.display = val === 'custom' ? 'block' : 'none';
+
+    // Get DNS server IPs
+    let dnsServers = null;
+    if (val === 'custom') {
+        let p = document.getElementById('settingDnsPrimary');
+        let s = document.getElementById('settingDnsSecondary');
+        dnsCustomPrimary = p ? p.value.trim() : '';
+        dnsCustomSecondary = s ? s.value.trim() : '';
+        if (dnsCustomPrimary) {
+            dnsServers = { primary: dnsCustomPrimary, secondary: dnsCustomSecondary || dnsCustomPrimary };
+        }
+    } else if (val !== 'system') {
+        dnsServers = DNS_SERVERS[val] || null;
+    }
+
+    // Update badge
+    let badge = document.getElementById('dnsStatusBadge');
+    if (badge) {
+        if (val !== 'system' && dnsServers) badge.innerText = 'Active';
+        else badge.innerText = '';
+    }
+
+    // Save to settings file
+    try {
+        const appDataPath = (await Neutralino.os.getPath('data')).replace(/\\/g, '/');
+        const settingsDir = `${appDataPath}/com.awandigitals.file-download-manager`;
+        const settingsPath = `${settingsDir}/.fdm_settings.json`;
+        let settings = {};
+        try {
+            let raw = await Neutralino.filesystem.readFile(settingsPath);
+            if (raw) settings = JSON.parse(raw);
+        } catch (e) { }
+        settings.dnsProvider = val;
+        if (val === 'custom') {
+            settings.dnsCustomPrimary = dnsCustomPrimary;
+            settings.dnsCustomSecondary = dnsCustomSecondary;
+        }
+        try { await Neutralino.filesystem.createDirectory(settingsDir); } catch (e) { }
+        await Neutralino.filesystem.writeFile(settingsPath, JSON.stringify(settings));
+    } catch (e) { }
+
+    // Dispatch DNS config to backend immediately
+    Neutralino.extensions.dispatch('listener', 'action-download', {
+        task: 'config',
+        key: 'dnsServers',
+        value: dnsServers
     }).catch(() => { });
 }
 

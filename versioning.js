@@ -79,6 +79,30 @@ function updateIssFile(relPath) {
     updatedCount++;
 }
 
+function updateHtmlFile(relPath) {
+    const filePath = path.join(root, relPath);
+    if (!fs.existsSync(filePath)) {
+        console.warn(`  SKIP: ${relPath} (not found)`);
+        return;
+    }
+    let content = fs.readFileSync(filePath, 'utf8');
+    const pattern = /(Version\s+)(\d+(?:\.\d+)*)/;
+    const match = content.match(pattern);
+    if (!match) {
+        console.warn(`  WARN: ${relPath} (Version pattern not found)`);
+        return;
+    }
+    if (match[2] === newVersion) {
+        console.log(`  OK: ${relPath} -> ${newVersion} (already up to date)`);
+        updatedCount++;
+        return;
+    }
+    const replaced = content.replace(new RegExp(pattern, 'g'), `$1${newVersion}`);
+    fs.writeFileSync(filePath, replaced, 'utf8');
+    console.log(`  OK: ${relPath} -> ${newVersion}`);
+    updatedCount++;
+}
+
 console.log(`\nBumping version to: ${newVersion}\n`);
 
 // 1. package.json
@@ -105,5 +129,8 @@ updateIssFile('setup.iss');
 
 // 5. chrome-extension/manifest.json
 updateJsonFile('chrome-extension/manifest.json', ['version']);
+
+// 6. landing-pages/index.html
+updateHtmlFile('landing-pages/index.html');
 
 console.log(`\nDone! Updated ${updatedCount} file(s).\n`);

@@ -2,7 +2,7 @@
 ; KUSTOMISASI UNTUK FILE DOWNLOAD MANAGER
 ; ============================================================
 #define MyAppName "File Download Manager"           ; Nama Aplikasi
-#define MyAppVersion "26.4.11"                     ; Versi (dari neutralino.config.json)
+#define MyAppVersion "26.4.20"                     ; Versi (dari neutralino.config.json)
 #define MyAppPublisher "Awan Digitals"             ; Publisher
 #define MyAppExeName "FileDownloadManager.exe"      ; Nama file .exe eksekusi utama
 #define MyIconFile "resources\icons\appIcon.ico"    ; Path ke file ikon aplikasi

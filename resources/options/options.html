@@ -86,6 +86,30 @@
         <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">When enabled, the app will automatically start minimized to the system tray when your PC boots up.</p>
     </div>
 
+    <!-- DNS Provider -->
+    <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">DNS Provider
+            <span id="dnsStatusBadge" style="font-weight: 400; font-size: 0.75rem; color: var(--accent-main); margin-left: 6px; padding: 2px 8px; border-radius: 10px; background: rgba(59,130,246,0.15);"></span>
+        </label>
+        <select id="settingDnsProvider" onchange="saveDnsSetting()" style="width: 100%; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-light); padding: 0.6rem 0.75rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; appearance: auto;">
+            <option value="system">🖥️ System Default (ISP DNS)</option>
+            <option value="google">🔵 Google DNS (8.8.8.8 / 8.8.4.4)</option>
+            <option value="cloudflare">🟠 Cloudflare DNS (1.1.1.1 / 1.0.0.1)</option>
+            <option value="cloudflare-security">🛡️ Cloudflare Security (1.1.1.2 / 1.0.0.2)</option>
+            <option value="quad9">🟣 Quad9 DNS (9.9.9.9 / 149.112.112.112)</option>
+            <option value="opendns">🟢 OpenDNS (208.67.222.222 / 208.67.220.220)</option>
+            <option value="adguard">🔴 AdGuard DNS (94.140.14.14 / 94.140.15.15)</option>
+            <option value="custom">⚙️ Custom DNS...</option>
+        </select>
+        <div id="customDnsContainer" style="display: none; margin-top: 8px;">
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="settingDnsPrimary" placeholder="Primary DNS (e.g. 8.8.8.8)" oninput="saveDnsSetting()" style="flex: 1; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-light); padding: 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+                <input type="text" id="settingDnsSecondary" placeholder="Secondary DNS (e.g. 8.8.4.4)" oninput="saveDnsSetting()" style="flex: 1; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-light); padding: 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+            </div>
+        </div>
+        <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Use a custom DNS to bypass ISP-level blocking on HTTPS downloads. Recommended: Google or Cloudflare for fast & secure downloads.</p>
+    </div>
+
     <!-- Extension Log File -->
     <div class="setting-item" style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
         <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Extension Log File
