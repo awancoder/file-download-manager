@@ -127,8 +127,8 @@ updateJsonFile('neutralino.config.json', ['version']);
 // 4. setup.iss
 updateIssFile('setup.iss');
 
-// 5. chrome-extension/manifest.json
-updateJsonFile('chrome-extension/manifest.json', ['version']);
+// 5. wxt/package.json (WXT generates manifest version from package.json)
+updateJsonFile('wxt/package.json', ['version']);
 
 // 6. landing-pages/index.html
 updateHtmlFile('landing-pages/index.html');

@@ -348,18 +348,37 @@ async function killAllDownloads() {
 }
 
 async function installExtensionUI() {
-    let msg = "How to enable automatic download interceptor in Google Chrome:\n\n" +
-        "1. After clicking YES, the extension folder will open for you.\n" +
-        "2. Open Google Chrome manually (if not open).\n" +
-        "3. Type chrome://extensions/ in the address bar and press Enter.\n" +
-        "4. Enable Developer mode at the top right of Chrome.\n" +
-        "5. Drag and Drop the 'chrome-extension' folder into that page.\n\n" +
-        "Open the extension folder now?";
+    let msg = "How to install the extension in your browser:\n\n" +
+        "1. After clicking YES, the browser-extensions folder will open containing the extension zip files.\n" +
+        "2. For Google Chrome:\n" +
+        "   - Extract the chrome.zip file.\n" +
+        "   - Open chrome://extensions/ in Chrome and enable 'Developer mode'.\n" +
+        "   - Click 'Load unpacked' and select the extracted folder.\n\n" +
+        "3. For Firefox:\n" +
+        "   - Open about:debugging in Firefox.\n" +
+        "   - Click 'This Firefox' -> 'Load Temporary Add-on' and select the firefox.zip file.\n\n" +
+        "Open the extensions folder now?";
 
-    let res = await Neutralino.os.showMessageBox('Chrome Extension Setup', msg, 'YES_NO', 'INFO');
+    let res = await Neutralino.os.showMessageBox('Extension Setup', msg, 'YES_NO', 'INFO');
     if (res === 'YES') {
-        const extPath = `${NL_CWD}/chrome-extension`.replace(/\\/g, '/');
-        Neutralino.os.open(extPath).catch(() => { });
+        const candidates = [
+            `${NL_CWD}/browser-extensions`,
+            `${NL_CWD}/wxt/.output`,
+        ];
+        for (const candidate of candidates) {
+            const extPath = candidate.replace(/\\/g, '/');
+            try {
+                await Neutralino.filesystem.getStats(extPath);
+                Neutralino.os.open(extPath).catch(() => { });
+                return;
+            } catch { /* try next */ }
+        }
+        Neutralino.os.showMessageBox(
+            'Extension Setup',
+            'Extension folder not found. Run "npm run build" in the root directory first.',
+            'OK',
+            'WARNING'
+        ).catch(() => {});
     }
 }
 

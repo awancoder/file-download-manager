@@ -2,7 +2,7 @@
 ; KUSTOMISASI UNTUK FILE DOWNLOAD MANAGER
 ; ============================================================
 #define MyAppName "File Download Manager"           ; Nama Aplikasi
-#define MyAppVersion "26.4.20"                     ; Versi (dari neutralino.config.json)
+#define MyAppVersion "26.6.8"                     ; Versi (dari neutralino.config.json)
 #define MyAppPublisher "Awan Digitals"             ; Publisher
 #define MyAppExeName "FileDownloadManager.exe"      ; Nama file .exe eksekusi utama
 #define MyIconFile "resources\icons\appIcon.ico"    ; Path ke file ikon aplikasi
@@ -49,8 +49,11 @@ Source: "dist\file-download-manager\resources.neu"; DestDir: "{app}"; Flags: ign
 ; Sertakan folder ekstensi (NodeJS Backend)
 Source: "extensions\*"; DestDir: "{app}\extensions"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Sertakan folder Chrome Extension (Interceptor)
-Source: "chrome-extension\*"; DestDir: "{app}\chrome-extension"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Sertakan folder Chrome Extension (Interceptor) — output dari WXT build (cd wxt && bun run build)
+Source: "wxt\.output\chrome-mv3\*"; DestDir: "{app}\chrome-extension"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Sertakan berkas .zip ekstensi Chrome & Firefox agar mudah diinstal oleh pengguna
+Source: "wxt\.output\*.zip"; DestDir: "{app}\browser-extensions"; Flags: ignoreversion
 
 ; Copy file ikon ke folder instalasi agar bisa dipakai shortcut
 Source: "{#MyIconFile}"; DestDir: "{app}"; DestName: "appIcon.ico"; Flags: ignoreversion

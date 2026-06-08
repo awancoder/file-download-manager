@@ -37,7 +37,7 @@ log("=== Ekstensi Memulai (Startup) ===");
 log(`CWD: ${process.cwd()}`);
 log(`Args: ${process.argv.join(' ')}`);
 
-let express, cors, WebSocket, MultiThreadEngine, HttpDownloader, TorrentDownloader;
+let express, cors, WebSocket, MultiThreadEngine, HttpDownloader, TorrentDownloader, HlsDownloader;
 
 try {
     log("Memuat module dependencies...");
@@ -47,6 +47,7 @@ try {
     MultiThreadEngine = require('./MultiThreadEngine');
     HttpDownloader = require('./modules/http-downloader');
     TorrentDownloader = require('./modules/torrent-downloader');
+    HlsDownloader = require('./modules/hls-downloader');
     log("Semua module berhasil dimuat.");
 } catch(err) {
     log(`GAGAL memuat module: ${err.message}`);
@@ -208,7 +209,8 @@ let ws = null;
 let isConnected = false;
 let httpDownloader = null;
 let torrentDownloader = null;
-let downloadTypes = {}; // Track download type per ID: { id: 'http' | 'torrent' }
+let hlsDownloader = null;
+let downloadTypes = {}; // Track download type per ID: { id: 'http' | 'torrent' | 'hls' }
 
 // Logger object for modules
 const moduleLogger = {
@@ -220,8 +222,37 @@ function initializeDownloaders() {
     try {
         httpDownloader = new HttpDownloader(moduleLogger);
         torrentDownloader = new TorrentDownloader(moduleLogger);
+        hlsDownloader = new HlsDownloader(moduleLogger);
         
-        log("✅ Both downloader modules initialized");
+        log("✅ All downloader modules initialized (HTTP, Torrent, HLS)");
+
+        // Listen to HLS downloader events
+        hlsDownloader.on('started', (data) => {
+            log(`[HLS] Download started: ${data.id}`);
+            broadcastEvent('dl-started', { id: data.id, engine: 'hls', fileName: data.fileName });
+        });
+
+        hlsDownloader.on('progress', (data) => {
+            broadcastEvent('dl-progress', {
+                id: data.id,
+                progress: data.progress,
+                speed: data.speed,
+                downloaded: data.downloaded,
+                total: data.total
+            });
+        });
+
+        hlsDownloader.on('complete', (data) => {
+            log(`[HLS] Download completed: ${data.id}`);
+            broadcastEvent('dl-end', { id: data.id, info: { filePath: data.filePath } });
+            delete downloadTypes[data.id];
+        });
+
+        hlsDownloader.on('error', (data) => {
+            log(`[HLS] Download error: ${data.id} - ${data.error}`);
+            broadcastEvent('dl-error', { id: data.id, error: data.error });
+            delete downloadTypes[data.id];
+        });
 
         // Listen to HTTP downloader events
         httpDownloader.on('started', (data) => {
@@ -339,7 +370,9 @@ function handleDownloadAction(payload) {
         // Detect download type
         log(`[${id}] Checking if torrent URL...`);
         const isTorrent = TorrentDownloader.isTorrentUrl(url);
-        log(`[${id}] Download Type: ${isTorrent ? 'TORRENT' : 'HTTP'}`);
+        const isHls = url.includes('.m3u8') || (filename && filename.toLowerCase().endsWith('.m3u8'));
+        
+        log(`[${id}] Download Type: ${isTorrent ? 'TORRENT' : (isHls ? 'HLS' : 'HTTP')}`);
 
         if (isTorrent) {
             // Route to Torrent Downloader
@@ -353,6 +386,17 @@ function handleDownloadAction(payload) {
             log(`[${id}] Calling torrentDownloader.start()...`);
             torrentDownloader.start(id, url, downloadPath, filename, payload);
             log(`[${id}] torrentDownloader.start() called successfully`);
+        } else if (isHls) {
+            // Route to HLS Downloader
+            log(`[${id}] Routing to HLS Downloader...`);
+            if (!hlsDownloader) {
+                log(`[${id}] ❌ HLS downloader not initialized`);
+                broadcastEvent('dl-error', { id, error: 'HLS downloader not available' });
+                return;
+            }
+            downloadTypes[id] = 'hls';
+            log(`[${id}] Calling hlsDownloader.start()...`);
+            hlsDownloader.start(id, url, downloadPath, filename, payload);
         } else {
             // Route to HTTP Downloader
             if (!httpDownloader) {
@@ -402,20 +446,24 @@ function handleDownloadAction(payload) {
         } else if (dlType === 'torrent' && torrentDownloader && torrentDownloader.exists(id)) {
             torrentDownloader.cancel(id);
             found = true;
+        } else if (dlType === 'hls' && hlsDownloader && hlsDownloader.exists(id)) {
+            hlsDownloader.cancel(id);
+            found = true;
         }
 
-        // If not found by tracking, try both modules (handles orphaned/completed-but-still-alive downloads)
+        // If not found by tracking, try all modules (handles orphaned/completed-but-still-alive downloads)
         if (!found) {
             if (httpDownloader && httpDownloader.exists(id)) {
                 httpDownloader.cancel(id);
                 found = true;
             }
-            if (torrentDownloader) {
-                // Try tracked first, then scan client.torrents
-                if (torrentDownloader.exists(id)) {
-                    torrentDownloader.cancel(id);
-                    found = true;
-                }
+            if (torrentDownloader && torrentDownloader.exists(id)) {
+                torrentDownloader.cancel(id);
+                found = true;
+            }
+            if (hlsDownloader && hlsDownloader.exists(id)) {
+                hlsDownloader.cancel(id);
+                found = true;
             }
         }
 

@@ -75,12 +75,20 @@ For development, also ensure:
    cd ../../
    ```
 
-3. **Install the Chrome Extension**:
+3. **Build and install the Chrome Extension** (WXT + Vue 3):
+   ```bash
+   cd wxt
+   bun install
+   bun run build
+   cd ..
+   ```
    - Open Google Chrome and go to `chrome://extensions/`
    - Toggle **Developer mode** ON (top-right corner)
    - Click **Load unpacked**
-   - Select the `chrome-extension/` folder from this project
+   - Select the `wxt/.output/chrome-mv3/` folder from this project
    - The extension will now appear in your extensions list
+
+   For development with hot reload, run `bun run dev` inside `wxt/` — WXT will auto-open Chrome with the extension loaded.
 
 ### Running the Application
 
@@ -112,7 +120,7 @@ Your production-ready application will be compiled into the `/dist/` folder. Thi
 - All dependencies bundled (Node.js listener, resources)
 - Ready for redistribution
 
-**Note**: Users will still need to install the Chrome extension manually by loading the `chrome-extension/` folder through `chrome://extensions/`
+**Note**: Users will still need to install the Chrome extension manually by loading the `wxt/.output/chrome-mv3/` folder (after running `bun run build` in `wxt/`) through `chrome://extensions/`
 
 ## 🔧 Troubleshooting
 
@@ -180,7 +188,7 @@ This will automatically update the version in:
 - `package-lock.json`
 - `neutralino.config.json`
 - `setup.iss`
-- `chrome-extension/manifest.json`
+- `wxt/package.json` (WXT generates the extension manifest version from here)
 
 ## 🤝 Contributing
 

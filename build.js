@@ -7,6 +7,7 @@
  */
 
 const fs = require('fs');
+const path = require('path');
 const { execSync } = require('child_process');
 
 const configFile = 'neutralino.config.json';
@@ -19,15 +20,21 @@ function setInspector(enabled) {
 
 try {
     // 1. Disable inspector for production
-    console.log('\n[1/3] Disabling enableInspector for production...');
+    console.log('\n[1/4] Disabling enableInspector for production...');
     setInspector(false);
 
-    // 2. Run neu build
-    console.log('[2/3] Running neu build...\n');
+    // 2. Build and zip WXT extensions
+    console.log('\n[2/4] Building and zipping WXT extensions (Chrome & Firefox)...');
+    const wxtDir = path.join(__dirname, 'wxt');
+    execSync('bun run zip', { cwd: wxtDir, stdio: 'inherit' });
+    execSync('bun run zip:firefox', { cwd: wxtDir, stdio: 'inherit' });
+
+    // 3. Run neu build
+    console.log('\n[3/4] Running neu build...\n');
     execSync('neu build', { stdio: 'inherit' });
 
-    // 3. Run Inno Setup compiler
-    console.log('\n[3/3] Compiling installer with Inno Setup...\n');
+    // 4. Run Inno Setup compiler
+    console.log('\n[4/4] Compiling installer with Inno Setup...\n');
     const iscc = `"${process.env['ProgramFiles(x86)']}\\Inno Setup 6\\ISCC.exe"`;
     execSync(`${iscc} setup.iss`, { stdio: 'inherit' });
 

@@ -2,6 +2,16 @@
 
 All notable changes to the File Download Manager application will be documented in this file.
 
+## [v26.6.8] - 2026-06-08
+
+### Added
+- **HLS Downloader (.m3u8):** Added full support for downloading HLS streaming video playlists. The downloader automatically parses the manifest, fetches all `.ts` video segments in parallel, and merges them sequentially.
+- **Auto MP4 Conversion:** Automatically saves stitched HLS video streams with a `.mp4` extension instead of `.m3u8`, allowing immediate playback on most standard media players without any extra transcoding.
+- **Tab Title-based Filename Sniffing:** Automatically detects and renames generic playlist/video streams (like `playlist.m3u8` or `videoplayback.mp4`) using the sanitized title of the active browser tab.
+- **Automated Extension Zipping:** Updated the build process to automatically build and generate `.zip` extension files for both Google Chrome and Mozilla Firefox.
+- **Installer Integration:** Updated the setup packager to copy the compiled Chrome and Firefox extension `.zip` files into a dedicated `browser-extensions` folder in the installation directory.
+- **HTTP Settings UI Update:** Updated the Chrome Extension Setup button in the HTTP Settings tab to directly open the new `browser-extensions` directory, and rewritten the step-by-step instructions for loading `.zip` extensions.
+
 ## [v26.4.20] - 2026-04-20
 
 ### Added
