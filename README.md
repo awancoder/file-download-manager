@@ -16,8 +16,14 @@ When you start the app, it automatically launches the Node.js server in the back
 
 ## ✨ Key Features
 
-- **Chrome Download Interception**: Automatically catches downloads directly from Google Chrome. The extension extracts exact cookies, HTTP headers (`Referer`, `User-Agent`, etc.) to bypass Anti-Scraping and Cloudflare protections.
-  
+- **Chrome/Firefox Download Interception**: Automatically catches downloads directly from Google Chrome and Mozilla Firefox. The extension extracts exact cookies, HTTP headers (`Referer`, `User-Agent`, etc.) to bypass Anti-Scraping and Cloudflare protections.
+
+- **HLS Downloader (.m3u8 Support)**: Detects and downloads complete HTTP Live Streaming (HLS) `.m3u8` video streams. The downloader automatically parses the manifest, fetches all `.ts` segments in parallel, and merges them sequentially.
+
+- **Auto MP4 Output**: Seamlessly saves stitched HLS video streams directly into a `.mp4` container, allowing immediate playback on standard media players without any extra transcoding.
+
+- **Tab Title-based Renaming**: Automatically detects and replaces generic media filenames (like `playlist.m3u8` or `videoplayback.mp4`) with the sanitized title of the active browser tab.
+
 - **16-Thread Parallel Download Engine**: Splits a single download into **16 simultaneous TCP chunks**, saturating your maximum available bandwidth for large files (100 GB+). Falls back gracefully to single-thread mode for servers that don't support chunking.
 
 - **HTTP Range Resume**: Interrupted downloads can be recovered without restarting from zero. Supports proper HTTP Range request handling for resuming failed chunks.
@@ -75,18 +81,25 @@ For development, also ensure:
    cd ../../
    ```
 
-3. **Build and install the Chrome Extension** (WXT + Vue 3):
+3. **Build and package the Browser Extensions** (WXT + Vue 3):
+   - WXT compiles Chrome and Firefox extensions, generating ready-to-load directories and zip packages automatically:
    ```bash
    cd wxt
    bun install
    bun run build
+   bun run build:firefox
+   bun run zip
+   bun run zip:firefox
    cd ..
    ```
-   - Open Google Chrome and go to `chrome://extensions/`
-   - Toggle **Developer mode** ON (top-right corner)
-   - Click **Load unpacked**
-   - Select the `wxt/.output/chrome-mv3/` folder from this project
-   - The extension will now appear in your extensions list
+   - **Google Chrome**:
+     - Open Chrome and navigate to `chrome://extensions/`
+     - Enable **Developer mode** (top-right toggle)
+     - Click **Load unpacked** and select the `wxt/.output/chrome-mv3/` folder (or drag and drop the `.zip` file from `wxt/.output/` if using a packed version)
+   - **Mozilla Firefox**:
+     - Open Firefox and navigate to `about:debugging`
+     - Click **This Firefox** -> **Load Temporary Add-on...**
+     - Select the `.zip` file from `wxt/.output/file-download-manager-extension-<version>-firefox.zip`
 
    For development with hot reload, run `bun run dev` inside `wxt/` — WXT will auto-open Chrome with the extension loaded.
 
@@ -107,20 +120,22 @@ For development, also ensure:
 
 **Note**: The Node.js backend server must be running for the Chrome extension to work. The server exits when you close the Neutralino window or quit the app.
 
-## 🚀 Compiling for Production (*Building EXE*)
+## 🚀 Compiling for Production (*Building Installer*)
 
-Once customized and perfected, build a standalone Desktop Executable (`.exe`):
+Once customized and perfected, compile the standalone Desktop Executable (`.exe`) and package it into a Windows Setup installer:
 
 ```bash
-neu build
+npm run build
 ```
 
-Your production-ready application will be compiled into the `/dist/` folder. This generates:
-- Single `.exe` file with embedded resources
-- All dependencies bundled (Node.js listener, resources)
-- Ready for redistribution
+This build script automatically:
+1. Disables the developer console/inspector.
+2. Builds and zips the browser extensions for both Chrome and Firefox into `wxt/.output/`.
+3. Runs `neu build` to compile the Neutralino application binaries.
+4. Generates a Windows Setup installer (`.exe`) using Inno Setup (ISCC).
+5. Copies all browser extension `.zip` archives into a dedicated `browser-extensions` directory inside the application installation folder.
 
-**Note**: Users will still need to install the Chrome extension manually by loading the `wxt/.output/chrome-mv3/` folder (after running `bun run build` in `wxt/`) through `chrome://extensions/`
+**Note**: Users can easily find and load the extension `.zip` files by navigating to **Settings** -> **HTTP** tab inside the installed application and clicking **Install / Setup Chrome Extension**, which opens the `browser-extensions/` folder directly.
 
 ## 🔧 Troubleshooting
 
@@ -180,7 +195,7 @@ All UI state is automatically persisted to Neutralino storage.
 To update the app version across all files at once, run:
 
 ```bash
-npm run versi -- 26.3.25
+node versioning.js 26.6.8
 ```
 
 This will automatically update the version in:
