@@ -387,6 +387,20 @@ button:disabled {
   background: var(--danger-hover);
 }
 
+.btn-secondary,
+.btn-cancel {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+}
+
+.btn-secondary:not(:disabled):hover,
+.btn-cancel:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-muted);
+  color: var(--text-main);
+}
+
 .downloads-container {
   flex: 1;
   overflow-y: auto;

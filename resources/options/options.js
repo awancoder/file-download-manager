@@ -369,7 +369,10 @@ async function installExtensionUI() {
             const extPath = candidate.replace(/\\/g, '/');
             try {
                 await Neutralino.filesystem.getStats(extPath);
-                Neutralino.os.open(extPath).catch(() => { });
+                const winPath = extPath.replace(/\//g, '\\');
+                await Neutralino.os.open(extPath).catch(async () => {
+                    await Neutralino.os.execCommand(`explorer "${winPath}"`).catch(() => { });
+                });
                 return;
             } catch { /* try next */ }
         }

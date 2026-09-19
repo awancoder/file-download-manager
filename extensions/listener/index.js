@@ -1,6 +1,7 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const dnsConfig = require('./modules/dns-config');
 
 let logPath = '';
@@ -212,6 +213,127 @@ let torrentDownloader = null;
 let hlsDownloader = null;
 let downloadTypes = {}; // Track download type per ID: { id: 'http' | 'torrent' | 'hls' }
 
+// === Confirm Dialog (separate window) state ===
+let openDialogCount = 0;
+const DIALOG_BASE_X = 200;
+const DIALOG_BASE_Y = 150;
+const DIALOG_OFFSET_STEP = 32;
+const DIALOG_OFFSET_WRAP = 8;
+
+function getAppRoot() {
+    return path.join(__dirname, '..', '..');
+}
+
+// Cari executable Neutralino yang tepat untuk spawn window kedua:
+// dev (`neu run`) pakai binary mentah di bin/, production pakai exe hasil neu build.
+function getMainBinaryPath() {
+    const appRoot = getAppRoot();
+    const prodExe = path.join(appRoot, 'FileDownloadManager.exe');
+    if (fs.existsSync(prodExe)) return prodExe;
+
+    const devBinary = path.join(appRoot, 'bin', 'neutralino-win_x64.exe');
+    if (fs.existsSync(devBinary)) return devBinary;
+
+    return null;
+}
+
+function isS3ExpiringLink(url) {
+    return typeof url === 'string' && (url.includes('X-Amz-Expires=') || url.includes('Expires='));
+}
+
+// Baca folder download default dari settings yang sama dipakai window utama
+// (resources/js/main.js), supaya dialog konfirmasi & auto-bypass konsisten
+// dengan preferensi user tanpa perlu tanya ke Neutralino API.
+function getDefaultDownloadDir() {
+    try {
+        const appDataPath = process.env.APPDATA;
+        if (appDataPath) {
+            const settingsPath = path.join(appDataPath, 'com.awandigitals.file-download-manager', '.fdm_settings.json');
+            if (fs.existsSync(settingsPath)) {
+                const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+                if (settings.downloadDir) return settings.downloadDir;
+            }
+        }
+    } catch (e) { }
+
+    try {
+        return path.join(os.homedir(), 'Downloads');
+    } catch (e) {
+        return '.';
+    }
+}
+
+// Buka window dialog konfirmasi terpisah (proses Neutralino baru, mode confirmDialog).
+// Payload ditulis ke file temp karena bisa besar (cookie, headers) dan tidak aman/muat lewat CLI arg.
+function spawnConfirmDialog(id, payload) {
+    if (isS3ExpiringLink(payload.url)) {
+        log(`[${id}] Deteksi S3 expiring link, auto-start tanpa dialog konfirmasi.`);
+        confirmAndStartDownload(id, payload);
+        return;
+    }
+
+    const binaryPath = getMainBinaryPath();
+    if (!binaryPath) {
+        log(`❌ Tidak bisa menemukan binary Neutralino untuk dialog konfirmasi. Fallback: auto-start.`);
+        confirmAndStartDownload(id, payload);
+        return;
+    }
+
+    const tempPath = path.join(os.tmpdir(), `fdm-confirm-${id}.json`).replace(/\\/g, '/');
+    try {
+        fs.writeFileSync(tempPath, JSON.stringify(payload));
+    } catch (err) {
+        log(`❌ Gagal menulis payload dialog konfirmasi: ${err.message}`);
+        confirmAndStartDownload(id, payload);
+        return;
+    }
+
+    const slot = openDialogCount % DIALOG_OFFSET_WRAP;
+    const offsetX = DIALOG_BASE_X + slot * DIALOG_OFFSET_STEP;
+    const offsetY = DIALOG_BASE_Y + slot * DIALOG_OFFSET_STEP;
+    openDialogCount++;
+
+    const args = [
+        '--load-dir-res',
+        `--path=${getAppRoot()}`,
+        '--mode=window',
+        '--url=/dialog/confirm.html',
+        '--window-title=New Download',
+        '--window-width=500',
+        '--window-height=410',
+        '--window-min-width=500',
+        '--window-min-height=410',
+        '--window-resizable=false',
+        '--window-maximize=false',
+        '--window-always-on-top=true',
+        '--window-enable-inspector=false',
+        '--window-exit-process-on-close=true',
+        '--enable-extensions=false',
+        '--export-auth-info=false',
+        `--window-x=${offsetX}`,
+        `--window-y=${offsetY}`,
+        `--confirm-payload=${tempPath}`,
+        `--confirm-id=${id}`
+    ];
+
+    log(`🪟 Membuka dialog konfirmasi untuk ${id} (posisi ${offsetX},${offsetY})...`);
+
+    try {
+        const child = spawn(binaryPath, args, {
+            cwd: getAppRoot(),
+            detached: true,
+            stdio: 'ignore'
+        });
+        child.on('error', (err) => {
+            log(`❌ Gagal spawn dialog konfirmasi: ${err.message}`);
+        });
+        child.unref();
+    } catch (err) {
+        log(`❌ Exception saat spawn dialog konfirmasi: ${err.message}`);
+        confirmAndStartDownload(id, payload);
+    }
+}
+
 // Logger object for modules
 const moduleLogger = {
     log: (msg) => log(msg)
@@ -355,6 +477,38 @@ function broadcastEvent(event, data) {
     } else {
         log(`WARNING: Gagal broadcast ${event}. isConnected: ${isConnected}, ReadyState: ${ws ? ws.readyState : 'none'}`);
     }
+}
+
+// Titik tunggal untuk benar-benar memulai download setelah keputusan dibuat
+// (baik dari dialog konfirmasi, maupun auto-bypass S3). Dipanggil dari backend
+// langsung sehingga tidak bergantung pada window utama aktif/visible.
+function confirmAndStartDownload(id, payload) {
+    const isTorrent = payload.isTorrentFile || TorrentDownloader.isTorrentUrl(payload.url);
+    const isHls = typeof payload.url === 'string' && (payload.url.includes('.m3u8') ||
+        (payload.filename && payload.filename.toLowerCase().endsWith('.m3u8')));
+    const engineType = isTorrent ? 'torrent' : (isHls ? 'hls' : 'http');
+
+    broadcastEvent('new-download-confirmed', {
+        id,
+        url: payload.url,
+        filename: payload.filename,
+        downloadPath: payload.downloadPath,
+        fileSize: payload.fileSize || 0,
+        engineType
+    });
+
+    handleDownloadAction({
+        task: 'start',
+        id,
+        url: payload.url,
+        downloadPath: payload.downloadPath,
+        filename: payload.filename,
+        cookie: payload.cookie || '',
+        userAgent: payload.userAgent || '',
+        referrer: payload.referrer || '',
+        isTorrentFile: payload.isTorrentFile || false,
+        torrentFileName: payload.torrentFileName || ''
+    });
 }
 
 function handleDownloadAction(payload) {
@@ -569,10 +723,8 @@ function handleDownloadAction(payload) {
             broadcastEvent('webtorrent-update-status', { status: 'updating', message: 'Installing latest WebTorrent...' });
             try {
                 const listenerDir = __dirname;
-                const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-                const { execFile } = require('child_process');
                 await new Promise((resolve, reject) => {
-                    execFile(npmCmd, ['install', 'webtorrent@latest'], { cwd: listenerDir, timeout: 120000 }, (error, stdout, stderr) => {
+                    exec('npm install webtorrent@latest', { cwd: listenerDir, timeout: 120000 }, (error, stdout, stderr) => {
                         if (error) {
                             log(`npm install error: ${error.message}`);
                             log(`stderr: ${stderr}`);
@@ -671,16 +823,36 @@ const startServer = (port) => {
     app.post('/api/download', (req, res) => {
         const payload = req.body;
         log(`API Request received: POST /api/download - ${payload.url}`);
-        
-        // Sesuaikan payload agar cocok dengan ekspektasi main.js (cookie singular)
+
+        // Sesuaikan payload agar cocok dengan ekspektasi downloader (cookie singular)
+        let filename = payload.filename || '';
+        if (filename) filename = filename.replace(/\\/g, '/').split('/').pop();
+
         const mappedPayload = {
             ...payload,
-            cookie: payload.cookies || payload.cookie || ''
+            filename: filename || undefined,
+            cookie: payload.cookies || payload.cookie || '',
+            downloadPath: payload.downloadPath || getDefaultDownloadDir()
         };
-        
-        broadcastEvent('new-download', mappedPayload);
-        
-        res.json({ success: true, message: 'Tugas diterima oleh Download Manager' });
+
+        const id = 'dl_' + Date.now();
+        spawnConfirmDialog(id, mappedPayload);
+
+        res.json({ success: true, message: 'Task received by Download Manager' });
+    });
+
+    app.post('/api/confirm-download', (req, res) => {
+        const body = req.body || {};
+        const { decision, id } = body;
+        log(`API Request received: POST /api/confirm-download - decision: ${decision}, id: ${id}`);
+
+        if (decision === 'start') {
+            confirmAndStartDownload(id, body);
+        } else {
+            log(`[${id}] Download dibatalkan oleh user di dialog konfirmasi.`);
+        }
+
+        res.json({ success: true });
     });
 
     app.post('/api/shutdown', (req, res) => {

@@ -26,6 +26,12 @@ async function showInfoModal() {
         modal.style.display = 'flex';
         modal.innerHTML = html;
 
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeInfoModal();
+            }
+        });
+
         document.body.appendChild(modal);
         _infoModalLoaded = true;
     } catch (err) {

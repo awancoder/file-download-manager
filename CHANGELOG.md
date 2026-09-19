@@ -2,6 +2,24 @@
 
 All notable changes to the File Download Manager application will be documented in this file.
 
+## [v26.9.19] - 2026-09-19
+
+### Added
+- **Revamped About Modal:** Redesigned the About modal with futuristic aesthetics: ambient radial glow, pulsating animated app logo, gradient typography, live version pill status, and interactive feature highlight cards (16x Multi-Thread, BitTorrent, HLS Stream, Custom DNS).
+- **Synchronized Icon Reference Guide:** Updated the Info modal to reflect current features including the new sky-blue chain link icon for HLS streams, Retry button for zero-peer/failed downloads, table sorting/resizing guide, and bottom status bar terminal toggle.
+- **Automated Extension Packaging:** Automated the generation and distribution of clean browser extension `.zip` archives (`chrome.zip`, `firefox.zip`) in the `browser-extensions` directory, accessible directly from the application's HTTP settings.
+- **Inno Setup Automated Installer Pipeline:** Enhanced `build.js` with dynamic Inno Setup compiler detection (`ISCC.exe`) and automated one-command packaging (`npm run build`) to produce the standalone Windows installer (`Output/File_Download_Manager_v26.9.19.exe`).
+
+### Changed
+- **Full English Localization:** Audited and localized the entire application interface into English, including tooltips, confirmation prompts, error alerts, and extension API response messages.
+- **Streamlined Secondary Buttons:** Standardized `.btn-secondary` and `.btn-cancel` styles across all modals to guarantee high text contrast and legibility.
+- **HLS Stream Indicator:** Replaced the legacy triangle icon with a sky-blue chain link icon in the table speed column to clearly distinguish multi-segment HLS streams from regular video files.
+
+### Fixed
+- **Button Contrast Bug:** Resolved an issue in the Magnet modal where Cancel button text appeared white-on-white due to missing secondary button styling.
+- **WebTorrent Update Spawn Error:** Resolved Windows `spawn EINVAL` error when updating WebTorrent engine dependencies directly from the desktop settings UI.
+- **Dialog Inspector and Tray Management:** Fixed secondary confirm dialogs improperly launching devtools and eliminated duplicate system tray icon instances.
+
 ## [v26.6.8] - 2026-06-08
 
 ### Added

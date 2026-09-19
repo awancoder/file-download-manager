@@ -80,11 +80,17 @@ async function showAboutModal() {
             _aboutModal.id = 'aboutModal';
             _aboutModal.className = 'modal-overlay';
             _aboutModal.innerHTML = html;
+            _aboutModal.addEventListener('click', (e) => {
+                if (e.target === _aboutModal) {
+                    closeAboutModal();
+                }
+            });
+
             document.body.appendChild(_aboutModal);
 
             const versionEl = document.getElementById('appVersionAbout');
             if (versionEl) {
-                versionEl.innerText = window.NL_APPVERSION ? ('v' + window.NL_APPVERSION) : 'v1.0.0';
+                versionEl.innerText = window.NL_APPVERSION ? ('v' + window.NL_APPVERSION) : 'v26.9.19';
             }
 
             _aboutModalLoaded = true;

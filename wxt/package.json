@@ -1,7 +1,7 @@
 {
   "name": "file-download-manager-extension",
   "description": "An extension to intercept downloads and send them to the File Download Manager desktop application.",
-  "version": "26.6.8",
+  "version": "26.9.19",
   "private": true,
   "type": "module",
   "scripts": {

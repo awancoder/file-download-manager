@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>New Download</title>
+    <style>
+        :root {
+            --bg-main: #1e2129;
+            --bg-dark: #171a21;
+            --border-light: #333844;
+            --text-main: #e8e9ed;
+            --text-muted: #9298a8;
+            --accent: #3b82f6;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Inter, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            font-size: 13px;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+
+        .titlebar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .titlebar .icon {
+            font-size: 16px;
+        }
+
+        .titlebar .title {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .badge {
+            margin-left: auto;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent);
+        }
+
+        .body {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 7px 9px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-light);
+            border-radius: 5px;
+            color: var(--text-main);
+            font-size: 13px;
+        }
+
+        .field input[readonly] {
+            color: var(--text-muted);
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .folder-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .folder-row input {
+            flex: 1;
+        }
+
+        .btn {
+            padding: 7px 12px;
+            border-radius: 5px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-dark);
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            padding: 4px 14px 14px;
+        }
+
+        .actions .btn {
+            flex: 1;
+            padding: 9px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-start {
+            background: var(--success);
+            border-color: var(--success);
+            color: #06210f;
+        }
+
+        .btn-cancel {
+            background: transparent;
+        }
+
+        .size-info {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="titlebar">
+        <span class="icon">⬇️</span>
+        <span class="title">New Download Detected</span>
+        <span class="badge" id="typeBadge">HTTP</span>
+    </div>
+
+    <div class="body">
+        <div class="field">
+            <label>URL</label>
+            <input type="text" id="fUrl" readonly>
+        </div>
+        <div class="field">
+            <label>Save As</label>
+            <input type="text" id="fFilename">
+        </div>
+        <div class="field">
+            <label>Save To</label>
+            <div class="folder-row">
+                <input type="text" id="fFolder" readonly>
+                <button class="btn" id="btnChangeFolder">Change</button>
+            </div>
+        </div>
+        <div class="size-info" id="fSizeInfo"></div>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-cancel" id="btnCancel">Cancel</button>
+        <button class="btn btn-start" id="btnStart">Start Download</button>
+    </div>
+
+    <script src="/js/neutralino.js"></script>
+    <script src="confirm.js"></script>
+</body>
+
+</html>

@@ -6,10 +6,11 @@
  */
 
 const EventEmitter = require('events');
-const WebTorrent = require('webtorrent');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
+let WebTorrent = null;
 
 class TorrentDownloader extends EventEmitter {
     constructor(logger) {
@@ -21,14 +22,19 @@ class TorrentDownloader extends EventEmitter {
         this.isInitialized = false;
         this.maxConns = 500; // Default, can be overridden via setMaxConns()
         
-        this.initWebTorrent();
+        this.initPromise = this.initWebTorrent();
     }
 
     /**
      * Initialize WebTorrent client
      */
-    initWebTorrent() {
+    async initWebTorrent() {
         try {
+            if (!WebTorrent) {
+                const mod = await import('webtorrent');
+                WebTorrent = mod.default || mod;
+            }
+
             this.client = new WebTorrent({
                 maxConns: this.maxConns, // Configurable via settings
                 uploadLimit: -1,      // Unlimited upload (tit-for-tat needs this)
@@ -36,6 +42,10 @@ class TorrentDownloader extends EventEmitter {
                 torrentPort: 6881,    // Required by bittorrent-tracker
                 dht: true,            // Enable DHT for peer discovery
                 webSeeds: true        // Enable web seeds
+            });
+
+            this.client.on('error', (err) => {
+                this.logger.log(`[TORRENT] ❌ WebTorrent error: ${err.message}`);
             });
 
             // Public trackers for better peer discovery
@@ -54,10 +64,6 @@ class TorrentDownloader extends EventEmitter {
                 'wss://tracker.btorrent.xyz',
                 'wss://tracker.files.fm:7073/announce'
             ];
-
-            this.client.on('error', (err) => {
-                this.logger.log(`[TORRENT] ❌ WebTorrent error: ${err.message}`);
-            });
 
             this.logger.log(`[TORRENT] ✅ WebTorrent client initialized (maxConns: ${this.maxConns})`);
             this.isInitialized = true;
@@ -123,7 +129,11 @@ class TorrentDownloader extends EventEmitter {
      * @param {string} filename - Preferred filename (optional for torrents)
      * @param {object} options - Additional options
      */
-    start(id, url, downloadPath, filename, options = {}) {
+    async start(id, url, downloadPath, filename, options = {}) {
+        if (this.initPromise) {
+            await this.initPromise;
+        }
+
         if (!this.isInitialized || !this.client) {
             const errorMsg = 'WebTorrent client not initialized';
             this.logger.log(`[TORRENT] [${id}] ❌ ${errorMsg}`);

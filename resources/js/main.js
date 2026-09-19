@@ -23,6 +23,30 @@ let colWidths = {
     col_action: '12%'
 };
 
+let pendingEngines = {};
+
+function getEngineBadge(engine) {
+    if (engine === 'multi') {
+        return `<span title="Multi-Thread HTTP (16 Parallel Connections)" style="display: inline-flex; align-items: center; vertical-align: middle; cursor: help; margin-left: 2px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="gold" stroke="#ca8a04" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="gold" stroke="#ca8a04" stroke-width="2" style="margin-left: -5px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        </span>`;
+    } else if (engine === 'single') {
+        return `<span title="Single-Thread HTTP" style="display: inline-flex; align-items: center; vertical-align: middle; cursor: help; margin-left: 2px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#10b981" stroke="#047857" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        </span>`;
+    } else if (engine === 'hls') {
+        return `<span title="HLS Video Stream (Multi-Segment)" style="display: inline-flex; align-items: center; vertical-align: middle; cursor: help; margin-left: 2px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        </span>`;
+    } else if (engine === 'torrent') {
+        return `<span title="BitTorrent" style="display: inline-flex; align-items: center; vertical-align: middle; cursor: help; margin-left: 2px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="8"></circle><circle cx="5" cy="5" r="1"></circle><circle cx="19" cy="5" r="1"></circle><circle cx="19" cy="19" r="1"></circle><circle cx="5" cy="19" r="1"></circle></svg>
+        </span>`;
+    }
+    return '';
+}
+
 async function saveWindowState() {
     try {
         let isMaximized = await Neutralino.window.isMaximized();
@@ -117,7 +141,7 @@ function initTableResizers() {
 async function initApp() {
     Neutralino.init();
     
-    Neutralino.window.setTitle(`File Download Manager v${window.NL_APPVERSION || '1.0.0'}`);
+    Neutralino.window.setTitle(`File Download Manager v${window.NL_APPVERSION || '26.9.19'}`);
 
     // Handler saat tombol [X] diklik (Hanya sembunyikan jendela, jangan matikan aplikasi)
     Neutralino.events.on('windowClose', () => {
@@ -207,7 +231,7 @@ async function initApp() {
 
     Neutralino.events.on('trayMenuItemClicked', async (e) => {
         if (e.detail.id === 'show') {
-            Neutralino.window.show();
+            await bringWindowToFront();
         } else if (e.detail.id === 'quit') {
             // FIRE AND FORGET: Jangan 'await' di sini karena proses aplikasi 
             // sedang di ujung maut, tertahan sedikit saja bisa bikin zombie.
@@ -231,45 +255,32 @@ async function initApp() {
         }
     });
 
-    Neutralino.events.on('new-download', (evt) => {
-        console.log("Menerima event new-download:", evt.detail);
-        const payload = evt.detail;
-        if (payload && payload.url) {
-            console.log("Detail payload valid, memproses download...");
-            if (payload.url.startsWith('blob:') || payload.url.startsWith('data:')) {
-                console.warn("URL blob/data diabaikan.");
-                return;
-            }
-            if (payload.url.includes('X-Amz-Expires=') || payload.url.includes('Expires=')) {
-                console.log("Deteksi Direct Link/Cloud Link, memulai download langsung...");
-                startGenericDownload(payload);
-            } else {
-                console.log("Menampilkan modal konfirmasi...");
-                showConfirmModal(payload);
-            }
-        } else {
-            console.error("Payload new-download tidak valid:", payload);
-        }
+    // Dialog konfirmasi sekarang jadi window Neutralino terpisah (spawn oleh backend).
+    // Window utama hanya menerima keputusan akhir untuk menambah entry ke tabel.
+    Neutralino.events.on('new-download-confirmed', (evt) => {
+        console.log("Menerima event new-download-confirmed:", evt.detail);
+        addDownloadEntry(evt.detail);
     });
 
     Neutralino.events.on('dl-started', (evt) => {
         const { id, engine, fileName, seeders, leechers, totalPeers } = evt.detail;
         const validFileName = fileName || evt.detail.filename;
         console.log(`[DL-STARTED] ID: ${id}, Engine: ${engine}, FileName: ${validFileName}, Peers: ${totalPeers || 0}`);
+
+        if (engine) {
+            pendingEngines[id] = engine;
+        }
+
         if (downloads[id]) {
             downloads[id].error = null; // Clear previous errors
-            // Store peer info if available
             if (totalPeers !== undefined) {
                 downloads[id].seeders = seeders || 0;
                 downloads[id].leechers = leechers || 0;
                 downloads[id].totalPeers = totalPeers || 0;
             }
-            if (engine === 'multi') {
-                downloads[id].engineHtml = `<svg width="14" height="14" viewBox="0 0 24 24" fill="gold" stroke="#ca8a04" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><svg width="14" height="14" viewBox="0 0 24 24" fill="gold" stroke="#ca8a04" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
-            } else if (engine === 'torrent') {
-                downloads[id].engineHtml = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="8"></circle><circle cx="5" cy="5" r="1"></circle><circle cx="19" cy="5" r="1"></circle><circle cx="19" cy="19" r="1"></circle><circle cx="5" cy="19" r="1"></circle></svg>`;
-            } else {
-                downloads[id].engineHtml = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#10b981" stroke="#047857" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
+            if (engine) {
+                downloads[id].engine = engine;
+                downloads[id].engineHtml = getEngineBadge(engine);
             }
             if (validFileName) {
                 let hIndex = historyData.findIndex(h => h.id === id);
@@ -280,7 +291,13 @@ async function initApp() {
                 if (titleEl) titleEl.innerText = validFileName;
             }
             let engEl = document.getElementById(`engine_${id}`);
-            if (engEl) engEl.innerHTML = downloads[id].engineHtml;
+            if (engEl) engEl.innerHTML = downloads[id].engineHtml || (engine ? getEngineBadge(engine) : '');
+        }
+
+        let hIndex = historyData.findIndex(h => h.id === id);
+        if (hIndex >= 0 && engine) {
+            historyData[hIndex].engine = engine;
+            try { Neutralino.storage.setData('downloadHistory', JSON.stringify(historyData)); } catch (e) { }
         }
     });
 
@@ -622,14 +639,26 @@ function processNextConfirm() {
     document.getElementById('confirmDownloadModal').style.display = 'flex';
 }
 
-async function showConfirmModal(payload) {
-    try { closeSettingsModal(); } catch (e) { }
+async function bringWindowToFront() {
     try {
+        // unminimize() dulu: window yang di-start hidden lewat --autostart bisa
+        // dianggap Windows sebagai minimized, dan show() saja tidak selalu cukup
+        // untuk lolos dari focus-stealing prevention di proses background.
         await Neutralino.window.unminimize();
         await Neutralino.window.show();
+        await Neutralino.window.focus();
         await Neutralino.window.setAlwaysOnTop(true);
-        setTimeout(() => Neutralino.window.setAlwaysOnTop(false).catch(() => { }), 500);
-    } catch (e) { }
+        setTimeout(() => Neutralino.window.setAlwaysOnTop(false).catch((e) => {
+            console.error('setAlwaysOnTop(false) gagal:', e);
+        }), 500);
+    } catch (e) {
+        console.error('bringWindowToFront() gagal:', e);
+    }
+}
+
+async function showConfirmModal(payload) {
+    try { closeSettingsModal(); } catch (e) { }
+    await bringWindowToFront();
 
     confirmQueue.push(payload || {});
     processNextConfirm();
@@ -683,8 +712,8 @@ function submitAddUrl() {
     if (!targetUrl) return;
 
     if (targetUrl.startsWith('blob:') || targetUrl.startsWith('data:')) {
-        let msg = "URL dengan format 'blob:' atau 'data:' tidak didukung karena file tersebut berada di dalam memori browser.";
-        Neutralino.os.showMessageBox('URL Tidak Didukung', msg, 'OK', 'ERROR');
+        let msg = "URLs with 'blob:' or 'data:' format are not supported because the file resides in browser memory.";
+        Neutralino.os.showMessageBox('Unsupported URL', msg, 'OK', 'ERROR');
         return;
     }
 
@@ -693,23 +722,22 @@ function submitAddUrl() {
     showConfirmModal({ url: targetUrl, filename: '' });
 }
 
-function startGenericDownload(payloadObj) {
-    const url = payloadObj.url;
-    let filename = payloadObj.filename || '';
-    if (filename) filename = filename.replace(/\\/g, '/').split('/').pop();
-
-    const dlId = 'dl_' + Date.now();
-    Neutralino.window.show();
-
-    let title = filename || url.split('/').pop().split('?')[0] || 'Unknown_File';
+// Menambahkan entry download baru ke tabel/history. Dipakai baik oleh alur
+// manual (Add Link/Torrent import, lewat startGenericDownload di bawah) maupun
+// oleh event 'new-download-confirmed' dari backend (alur extension, dialog
+// konfirmasi terpisah) — di kasus kedua, backend sudah memulai engine-nya
+// sendiri, jadi di sini kita hanya perlu mencatatnya ke tabel.
+function addDownloadEntry(detail) {
+    const dlId = detail.id;
+    const url = detail.url;
+    let title = detail.filename || (url || '').split('/').pop().split('?')[0] || 'Unknown_File';
+    if (title) title = title.replace(/\\/g, '/').split('/').pop();
     if (!title) title = 'file_download';
 
-    // Gunakan folder dari payload (dipilih di modal) atau default
-    const downloadDir = payloadObj.downloadPath || targetDownloadDir;
-    
-    // Detect if torrent
-    const isTorrent = payloadObj.isTorrentFile || (typeof url === 'string' && (url.startsWith('magnet:') || url.startsWith('data:')));
-    const initMsg = isTorrent ? `Connecting` : `Connecting`;
+    const downloadDir = detail.downloadPath || targetDownloadDir;
+    const isTorrent = detail.engineType === 'torrent' || detail.isTorrentFile ||
+        (typeof url === 'string' && (url.startsWith('magnet:') || url.startsWith('data:')));
+    const detectedEngine = pendingEngines[dlId] || (isTorrent ? 'torrent' : (detail.engineType === 'hls' ? 'hls' : null));
 
     downloads[dlId] = {
         id: dlId,
@@ -721,8 +749,9 @@ function startGenericDownload(payloadObj) {
         percent: '0',
         detailStr: 'Speed: -',
         totalSizeStr: '-',
-        engineHtml: '',
-        engineType: isTorrent ? 'torrent' : 'http',
+        engine: detectedEngine,
+        engineHtml: detectedEngine ? getEngineBadge(detectedEngine) : '',
+        engineType: isTorrent ? 'torrent' : (detail.engineType || 'http'),
         error: null,
         errorTime: null,
         seeders: 0,
@@ -735,21 +764,45 @@ function startGenericDownload(payloadObj) {
         url: url,
         title: title,
         size: "-",
-        status: initMsg,
-        engineType: isTorrent ? 'torrent' : 'http',
+        status: 'Connecting',
+        engine: detectedEngine,
+        engineType: isTorrent ? 'torrent' : (detail.engineType || 'http'),
         folder: downloadDir,
         finalFilePath: null,
         error: null,
         errorTime: null,
         date: new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     });
-    
+
     console.log(`[NEW-DOWNLOAD] ID: ${dlId}, Type: ${isTorrent ? 'TORRENT' : 'HTTP'}, Title: ${title}`);
 
     try { Neutralino.storage.setData('downloadHistory', JSON.stringify(historyData)); } catch (e) { }
 
     currentPage = 1;
     renderPage();
+}
+
+// Alur manual (Add Link / Torrent import) yang dipicu dari dalam window utama
+// yang sudah visible — di sini kita masih dispatch langsung ke backend karena
+// belum lewat dialog konfirmasi terpisah.
+function startGenericDownload(payloadObj) {
+    const url = payloadObj.url;
+    let filename = payloadObj.filename || '';
+    if (filename) filename = filename.replace(/\\/g, '/').split('/').pop();
+
+    const dlId = 'dl_' + Date.now();
+    const title = filename || (url || '').split('/').pop().split('?')[0] || 'file_download';
+    const downloadDir = payloadObj.downloadPath || targetDownloadDir;
+    const isTorrent = payloadObj.isTorrentFile || (typeof url === 'string' && (url.startsWith('magnet:') || url.startsWith('data:')));
+
+    addDownloadEntry({
+        id: dlId,
+        url: url,
+        filename: title,
+        downloadPath: downloadDir,
+        engineType: isTorrent ? 'torrent' : 'http',
+        isTorrentFile: payloadObj.isTorrentFile
+    });
 
     Neutralino.extensions.dispatch('listener', 'action-download', {
         task: 'start',
@@ -966,12 +1019,9 @@ function renderPage() {
         }
         if (sizeHtml.includes('NaN') || sizeHtml.includes('undefined') || sizeHtml === '?') sizeHtml = '-';
 
-        let engineHtml = '';
-        if (isActive && downloads[item.id].engineHtml) {
-            engineHtml = `<span id="engine_${item.id}" style="min-width: 14px; display: inline-flex;">${downloads[item.id].engineHtml}</span>`;
-        } else {
-            engineHtml = `<span id="engine_${item.id}" style="min-width: 14px; display: inline-flex;"></span>`;
-        }
+        let curEngine = (downloads[item.id] && downloads[item.id].engine) || item.engine || (item.engineType === 'torrent' ? 'torrent' : null);
+        let engineBadge = curEngine ? getEngineBadge(curEngine) : '';
+        let engineHtml = `<span id="engine_${item.id}" style="min-width: 14px; display: inline-flex; align-items: center;">${engineBadge}</span>`;
 
         let actionHtml = '';
         if (isActive) {
@@ -1117,6 +1167,20 @@ function updateSortIndicators() {
 }
 
 async function deleteHistoryItem(id) {
+    const item = historyData.find(h => h.id === id);
+    const title = item ? item.title : '';
+    const confirmMsg = title
+        ? `Are you sure you want to delete this record?\n\n"${title}"`
+        : 'Are you sure you want to delete this record?';
+
+    const response = await Neutralino.os.showMessageBox(
+        'Confirm Delete',
+        confirmMsg,
+        'YES_NO',
+        'QUESTION'
+    );
+    if (response !== 'YES') return;
+
     // Also cancel any active backend process for this download
     if (downloads[id] && !downloads[id].completed && !downloads[id].cancelled) {
         downloads[id].cancelled = true;
@@ -1143,7 +1207,7 @@ async function safeOpenPath(targetPath) {
             await Neutralino.os.open(targetPath);
         }
     } catch (e) {
-        Neutralino.os.showMessageBox('Not Found', 'Berkas / folder tidak ditemukan pada path:\n' + targetPath, 'OK', 'ERROR');
+        Neutralino.os.showMessageBox('Not Found', 'File or folder not found at path:\n' + targetPath, 'OK', 'ERROR');
     }
 }
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
   "applicationId": "com.awandigitals.file-download-manager",
-  "version": "26.6.8",
+  "version": "26.9.19",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/resources/",
@@ -82,6 +82,22 @@
         "filesystem.*",
         "os.*"
       ]
+    },
+    "confirmDialog": {
+      "title": "New Download",
+      "url": "/dialog/confirm.html",
+      "width": 500,
+      "height": 410,
+      "minWidth": 500,
+      "minHeight": 410,
+      "center": false,
+      "resizable": false,
+      "maximize": false,
+      "hidden": false,
+      "alwaysOnTop": true,
+      "borderless": false,
+      "enableInspector": false,
+      "exitProcessOnClose": true
     }
   },
   "cli": {
