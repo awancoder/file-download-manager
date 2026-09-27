@@ -2,6 +2,18 @@
 
 All notable changes to the File Download Manager application will be documented in this file.
 
+## [v26.9.28] - 2026-09-28
+
+### Added
+- **Dynamic Backend Port Fallback & Auto-Discovery:** Implemented intelligent port conflict resolution (`EADDRINUSE`) scanning ports 5050–5070 dynamically with port caching, bridge file generation (`.fdm_backend_port`), and automatic port probing in Chrome and Firefox extensions.
+- **WebView2 User Data Directory Isolation:** Isolated WebView2 user data profile directory for confirmation dialogs to prevent multi-instance runtime collisions and crashes on Windows.
+
+### Fixed
+- **Blank New Download Dialog:** Fixed an issue where the download confirmation dialog opened as a blank black window in production builds by removing deprecated `--load-dir-res` for bundled resources and including `resources/` in Inno Setup.
+- **Filesystem API Method Alignment:** Corrected `removeFile` to `remove` in `confirm.js` per Neutralinojs v6 filesystem specifications to ensure temporary JSON payloads are properly cleaned up.
+- **Safe Type Inspection for Download Actions:** Safeguarded URL and Torrent detection against undefined/non-string payloads in the listener backend.
+- **Immediate Initial File Size Display:** Automatically populates the file size column upon download confirmation before progress events begin.
+
 ## [v26.9.19] - 2026-09-19
 
 ### Added

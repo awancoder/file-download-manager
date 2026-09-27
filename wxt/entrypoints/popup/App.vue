@@ -2,11 +2,12 @@
 import { onMounted, ref, watch, onUnmounted } from 'vue';
 import iconUrl from '/icon.png';
 
+import { getFdmHost } from '../../utils/fdm-host';
+
 const isEnabled = ref(true);
 const currentTab = ref<'status' | 'detected'>('status');
 const activeTabId = ref<number | null>(null);
 const detectedItems = ref<any[]>([]);
-const FDM_HOST = 'http://127.0.0.1:5050';
 const isFdmOnline = ref(true);
 const downloadStatuses = ref<{ [key: string]: 'idle' | 'loading' | 'success' | 'error' }>({});
 
@@ -58,7 +59,8 @@ function updateBadge(enabled: boolean) {
 
 async function checkFdmStatus() {
   try {
-    const res = await fetch(`${FDM_HOST}/api/ping`, {
+    const host = await getFdmHost();
+    const res = await fetch(`${host}/api/ping`, {
       method: 'GET',
       signal: AbortSignal.timeout(1500),
     });
@@ -102,7 +104,8 @@ async function sendToFdm(item: any) {
       referrer: item.url,
     };
 
-    const res = await fetch(`${FDM_HOST}/api/download`, {
+    const host = await getFdmHost();
+    const res = await fetch(`${host}/api/download`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

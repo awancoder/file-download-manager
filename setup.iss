@@ -2,7 +2,7 @@
 ; KUSTOMISASI UNTUK FILE DOWNLOAD MANAGER
 ; ============================================================
 #define MyAppName "File Download Manager"           ; Nama Aplikasi
-#define MyAppVersion "26.9.19"                     ; Versi (dari neutralino.config.json)
+#define MyAppVersion "26.9.28"                     ; Versi (dari neutralino.config.json)
 #define MyAppPublisher "Awan Digitals"             ; Publisher
 #define MyAppExeName "FileDownloadManager.exe"      ; Nama file .exe eksekusi utama
 #define MyIconFile "resources\icons\appIcon.ico"    ; Path ke file ikon aplikasi
@@ -45,6 +45,7 @@ Name: "startmenuicon"; Description: "Create a &Start Menu shortcut"; GroupDescri
 ; Catatan: Pastikan sudah menjalankan 'neu build' sebelum mengompice script Inno Setup ini.
 Source: "dist\file-download-manager\file-download-manager-win_x64.exe"; DestDir: "{app}"; DestName: "{#MyAppExeName}"; Flags: ignoreversion
 Source: "dist\file-download-manager\resources.neu"; DestDir: "{app}"; Flags: ignoreversion
+Source: "resources\*"; DestDir: "{app}\resources"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Sertakan folder ekstensi (NodeJS Backend)
 Source: "extensions\*"; DestDir: "{app}\extensions"; Flags: ignoreversion recursesubdirs createallsubdirs

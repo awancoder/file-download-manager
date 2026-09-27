@@ -9,8 +9,8 @@ export default defineConfig({
     author: 'Awan Digitals',
     permissions: ['downloads', 'cookies', 'declarativeNetRequest', 'storage', 'webRequest', 'tabs'],
     host_permissions: [
-      'http://localhost:5050/*',
-      'http://127.0.0.1:5050/*',
+      'http://localhost:*/*',
+      'http://127.0.0.1:*/*',
       '<all_urls>',
     ],
     icons: {

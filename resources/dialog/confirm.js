@@ -1,4 +1,5 @@
-const API_HOST = 'http://127.0.0.1:5050';
+let apiPort = getArgValue('api-port') || '5050';
+let API_HOST = `http://127.0.0.1:${apiPort}`;
 
 let payload = null;
 let confirmId = '';
@@ -49,7 +50,7 @@ async function sendDecision(decision) {
     }
 
     try {
-        if (payloadFilePath) await Neutralino.filesystem.removeFile(payloadFilePath);
+        if (payloadFilePath) await Neutralino.filesystem.remove(payloadFilePath);
     } catch (e) { }
 
     Neutralino.app.exit();
@@ -61,6 +62,24 @@ async function init() {
     Neutralino.events.on('windowClose', () => {
         sendDecision('cancel');
     });
+
+    const portArg = getArgValue('api-port');
+    if (portArg) {
+        apiPort = portArg;
+        API_HOST = `http://127.0.0.1:${apiPort}`;
+    } else {
+        try {
+            const tempEnv = await Neutralino.os.getEnv('TEMP');
+            if (tempEnv) {
+                const portFile = tempEnv.replace(/\\/g, '/') + '/.fdm_backend_port';
+                const filePort = await Neutralino.filesystem.readFile(portFile);
+                if (filePort && filePort.trim()) {
+                    apiPort = filePort.trim();
+                    API_HOST = `http://127.0.0.1:${apiPort}`;
+                }
+            }
+        } catch (e) { }
+    }
 
     confirmId = getArgValue('confirm-id');
     payloadFilePath = (getArgValue('confirm-payload') || '').replace(/\\/g, '/');

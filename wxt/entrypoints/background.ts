@@ -1,4 +1,4 @@
-const FDM_HOST = 'http://127.0.0.1:5050';
+import { getFdmHost } from '../utils/fdm-host';
 
 const MEDIA_TYPES = [
   'video/',
@@ -237,7 +237,8 @@ export default defineBackground(() => {
     };
 
     try {
-      const res = await fetch(`${FDM_HOST}/api/download`, {
+      const host = await getFdmHost();
+      const res = await fetch(`${host}/api/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -253,7 +254,7 @@ export default defineBackground(() => {
   // 2. Deteksi media/file dari lalu lintas jaringan secara pasif (seperti IDM)
   chrome.webRequest.onHeadersReceived.addListener(
     async (details) => {
-      if (details.url.includes('127.0.0.1:5050') || details.url.includes('localhost:5050')) {
+      if (details.url.includes('127.0.0.1:') || details.url.includes('localhost:')) {
         return;
       }
 

@@ -6,6 +6,7 @@ let torrentMaxConns = 500; // Default recommended
 let dnsProvider = 'system';
 let dnsCustomPrimary = '';
 let dnsCustomSecondary = '';
+let activeBackendPort = 5050;
 
 let currentPage = 1;
 const itemsPerPage = 25;
@@ -241,7 +242,7 @@ async function initApp() {
             Neutralino.extensions.dispatch('listener', 'action-download', { task: 'shutdown' }).catch(() => { });
 
             // Backup shutdown lewat HTTP
-            fetch('http://localhost:5050/api/shutdown', { method: 'POST' }).catch(() => { });
+            fetch(`http://127.0.0.1:${activeBackendPort}/api/shutdown`, { method: 'POST' }).catch(() => { });
 
             // Eksekusi mati total secepat mungkin
             setTimeout(() => {
@@ -252,6 +253,13 @@ async function initApp() {
                 }
                 Neutralino.app.exit(0);
             }, 400);
+        }
+    });
+
+    Neutralino.events.on('backend-port-ready', (evt) => {
+        if (evt.detail && evt.detail.port) {
+            activeBackendPort = evt.detail.port;
+            console.log(`[BACKEND-PORT] Port aktif backend diterima: ${activeBackendPort}`);
         }
     });
 
@@ -738,6 +746,7 @@ function addDownloadEntry(detail) {
     const isTorrent = detail.engineType === 'torrent' || detail.isTorrentFile ||
         (typeof url === 'string' && (url.startsWith('magnet:') || url.startsWith('data:')));
     const detectedEngine = pendingEngines[dlId] || (isTorrent ? 'torrent' : (detail.engineType === 'hls' ? 'hls' : null));
+    const initialSize = (detail.fileSize && detail.fileSize > 0) ? formatBytes(detail.fileSize) : '-';
 
     downloads[dlId] = {
         id: dlId,
@@ -748,7 +757,7 @@ function addDownloadEntry(detail) {
         outputFolder: downloadDir,
         percent: '0',
         detailStr: 'Speed: -',
-        totalSizeStr: '-',
+        totalSizeStr: initialSize,
         engine: detectedEngine,
         engineHtml: detectedEngine ? getEngineBadge(detectedEngine) : '',
         engineType: isTorrent ? 'torrent' : (detail.engineType || 'http'),
@@ -763,7 +772,7 @@ function addDownloadEntry(detail) {
         id: dlId,
         url: url,
         title: title,
-        size: "-",
+        size: initialSize,
         status: 'Connecting',
         engine: detectedEngine,
         engineType: isTorrent ? 'torrent' : (detail.engineType || 'http'),
@@ -1216,7 +1225,7 @@ async function exitApp() {
     
     // 1. Matikan listener extension dulu
     try {
-        await fetch('http://127.0.0.1:5050/api/shutdown', { 
+        await fetch(`http://127.0.0.1:${activeBackendPort}/api/shutdown`, { 
             method: 'POST',
             mode: 'no-cors',
             signal: AbortSignal.timeout(2000) 

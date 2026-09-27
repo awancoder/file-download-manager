@@ -1,8 +1,11 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const http = require('http');
 const { exec, spawn } = require('child_process');
 const dnsConfig = require('./modules/dns-config');
+
+let activeApiPort = 5050;
 
 let logPath = '';
 try {
@@ -293,8 +296,9 @@ function spawnConfirmDialog(id, payload) {
     const offsetY = DIALOG_BASE_Y + slot * DIALOG_OFFSET_STEP;
     openDialogCount++;
 
+    const isNeuBundle = fs.existsSync(path.join(getAppRoot(), 'resources.neu'));
+
     const args = [
-        '--load-dir-res',
         `--path=${getAppRoot()}`,
         '--mode=window',
         '--url=/dialog/confirm.html',
@@ -307,22 +311,35 @@ function spawnConfirmDialog(id, payload) {
         '--window-maximize=false',
         '--window-always-on-top=true',
         '--window-enable-inspector=false',
-        '--window-exit-process-on-close=true',
+        '--window-exit-process-on-close=false',
         '--enable-extensions=false',
         '--export-auth-info=false',
         `--window-x=${offsetX}`,
         `--window-y=${offsetY}`,
         `--confirm-payload=${tempPath}`,
-        `--confirm-id=${id}`
+        `--confirm-id=${id}`,
+        `--api-port=${activeApiPort}`
     ];
 
+    // Hanya gunakan --load-dir-res di mode development (ketika resources.neu belum di-bundle)
+    if (!isNeuBundle) {
+        args.unshift('--load-dir-res');
+    }
+
     log(`🪟 Membuka dialog konfirmasi untuk ${id} (posisi ${offsetX},${offsetY})...`);
+
+    // Isolasi user data folder WebView2 agar tidak konflik dengan jendela utama di Windows
+    const dialogUdf = path.join(os.tmpdir(), 'fdm-webview2-dialog');
+    const childEnv = Object.assign({}, process.env, {
+        WEBVIEW2_USER_DATA_FOLDER: dialogUdf
+    });
 
     try {
         const child = spawn(binaryPath, args, {
             cwd: getAppRoot(),
             detached: true,
-            stdio: 'ignore'
+            stdio: 'ignore',
+            env: childEnv
         });
         child.on('error', (err) => {
             log(`❌ Gagal spawn dialog konfirmasi: ${err.message}`);
@@ -523,8 +540,8 @@ function handleDownloadAction(payload) {
     if (task === 'start') {
         // Detect download type
         log(`[${id}] Checking if torrent URL...`);
-        const isTorrent = TorrentDownloader.isTorrentUrl(url);
-        const isHls = url.includes('.m3u8') || (filename && filename.toLowerCase().endsWith('.m3u8'));
+        const isTorrent = payload.isTorrentFile || TorrentDownloader.isTorrentUrl(url);
+        const isHls = typeof url === 'string' && (url.includes('.m3u8') || (filename && filename.toLowerCase().endsWith('.m3u8')));
         
         log(`[${id}] Download Type: ${isTorrent ? 'TORRENT' : (isHls ? 'HLS' : 'HTTP')}`);
 
@@ -814,10 +831,29 @@ function connectToNeutralino() {
     });
 }
 
-const startServer = (port) => {
-    // Ping endpoint: Chrome extension cek apakah app running
+function saveActivePort(port) {
+    activeApiPort = port;
+    try {
+        const tempPortFile = path.join(os.tmpdir(), '.fdm_backend_port');
+        fs.writeFileSync(tempPortFile, String(port));
+    } catch (e) {
+        log(`Gagal menulis .fdm_backend_port: ${e.message}`);
+    }
+    try {
+        const appDataPath = process.env.APPDATA;
+        if (appDataPath) {
+            const dir = path.join(appDataPath, 'com.awandigitals.file-download-manager');
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(path.join(dir, '.fdm_backend_port'), String(port));
+        }
+    } catch (e) { }
+    broadcastEvent('backend-port-ready', { port });
+}
+
+const startServer = (preferredPort = 5050, maxPort = 5070) => {
+    // Ping endpoint: Chrome & Firefox extension cek apakah app running dan port aktif
     app.get('/api/ping', (req, res) => {
-        res.json({ success: true, status: 'running' });
+        res.json({ success: true, status: 'running', port: activeApiPort });
     });
 
     app.post('/api/download', (req, res) => {
@@ -861,9 +897,35 @@ const startServer = (port) => {
         process.exit(0);
     });
 
-    app.listen(port, '127.0.0.1', () => {
-        log(`🚀 API Server running at http://127.0.0.1:${port}`);
-    });
+    function tryBind(currentPort) {
+        const server = http.createServer(app);
+
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                log(`⚠️ Port ${currentPort} sedang digunakan aplikasi lain.`);
+                if (currentPort > 0 && currentPort < maxPort) {
+                    const nextPort = currentPort + 1;
+                    log(`Mencoba port cadangan: ${nextPort}...`);
+                    tryBind(nextPort);
+                } else if (currentPort !== 0) {
+                    log(`Semua port range 5050-${maxPort} terpakai. Menggunakan port dinamis acak dari OS...`);
+                    tryBind(0);
+                } else {
+                    log(`❌ Gagal binding ke port manapun: ${err.message}`);
+                }
+            } else {
+                log(`❌ Error saat menjalankan server: ${err.message}`);
+            }
+        });
+
+        server.listen(currentPort, '127.0.0.1', () => {
+            const actualPort = server.address().port;
+            log(`🚀 API Server running at http://127.0.0.1:${actualPort}`);
+            saveActivePort(actualPort);
+        });
+    }
+
+    tryBind(preferredPort);
 };
 
 (async () => {
